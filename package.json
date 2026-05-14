@@ -9,13 +9,32 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "expo": "~54.0.33",
-    "expo-status-bar": "~3.0.9",
-    "react": "19.1.0",
-    "react-native": "0.81.5"
+    "@expo/cli": "^55.0.29",
+    "@expo/metro-runtime": "~55.0.11",
+    "@jsr/xlsft__smartshell-sdk": "^1.0.5",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-navigation/bottom-tabs": "^7.15.11",
+    "@react-navigation/native": "^7.2.2",
+    "@supabase/supabase-js": "^2.105.4",
+    "@xlsft/smartshell-sdk": "npm:@jsr/xlsft__smartshell-sdk@^1.0.5",
+    "expo": "^55.0.23",
+    "expo-file-system": "^55.0.19",
+    "expo-image-manipulator": "~55.0.16",
+    "expo-image-picker": "~55.0.20",
+    "expo-media-library": "~55.0.16",
+    "expo-sharing": "~55.0.18",
+    "expo-status-bar": "~55.0.6",
+    "metro": "^0.83.3",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-native": "0.83.6",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.23.0",
+    "react-native-view-shot": "4.0.3",
+    "react-native-web": "^0.21.0"
   },
   "devDependencies": {
-    "@types/react": "~19.1.0",
+    "@types/react": "~19.2.10",
     "typescript": "~5.9.2"
   },
   "private": true
