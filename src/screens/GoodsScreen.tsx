@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, Alert,
-} from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { GoodItem, GoodDifference } from '../types';
 import { getGoodsData, GoodData } from '../utils/smartshell';
 import { saveGoodsDraft, getGoodsDraft } from '../utils/storage';
@@ -19,46 +18,30 @@ export default function GoodsScreen() {
   const [loaded, setLoaded] = useState(false);
   const [differences, setDifferences] = useState<GoodDifference[]>([]);
 
-  useEffect(() => { loadDraft(); }, []);
-  useEffect(() => { if (goods.length > 0) saveGoodsDraft(goods); }, [goods]);
-  useEffect(() => { if (isLoggedIn && !loaded) fetchGoods(); }, [isLoggedIn]);
-
-  useEffect(() => {
-    if (!loaded || !isLoggedIn) return;
-    const interval = setInterval(async () => {
-      try {
-        const data = await getGoodsData();
-        if (data && data.length > 0) {
-          setGoods((prev) =>
-            data.map((d: GoodData) => {
-              const current = prev.find((p) => p.id === String(d.id));
-              return { id: String(d.id), name: d.name, shellQuantity: d.quantity, factQuantity: current?.factQuantity || '' };
-            })
-          );
-        }
-      } catch (e) {}
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [loaded, isLoggedIn]);
-
-  const loadDraft = async () => {
-    const draft = await getGoodsDraft();
-    if (draft && draft.length > 0) { setGoods(draft); setLoaded(true); }
-  };
+  useFocusEffect(
+    useCallback(() => {
+      if (isLoggedIn) {
+        setLoading(true);
+        fetchGoods().finally(() => setLoading(false));
+      }
+    }, [isLoggedIn])
+  );
 
   const fetchGoods = async () => {
-    setLoading(true);
     try {
       const data = await getGoodsData();
       const saved = await getGoodsDraft();
-      setGoods(data.map((d: GoodData) => {
+      const items = data.map((d: GoodData) => {
         const sv = saved?.find((s: any) => s.id === String(d.id));
         return { id: String(d.id), name: d.name, shellQuantity: d.quantity, factQuantity: sv?.factQuantity || '' };
-      }));
-      setLoaded(true); setDifferences([]);
-    } catch (e) { Alert.alert('Ошибка', 'Не удалось загрузить товары'); }
-    setLoading(false);
+      });
+      setGoods(items);
+      setLoaded(true);
+      setDifferences([]);
+    } catch (e) {}
   };
+
+  useEffect(() => { if (goods.length > 0) saveGoodsDraft(goods); }, [goods]);
 
   const updateFact = (id: string, v: string) => setGoods(prev => prev.map(g => g.id === id ? { ...g, factQuantity: v } : g));
 
@@ -68,12 +51,21 @@ export default function GoodsScreen() {
     setDifferences(diff);
   };
 
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={COLORS.green} />
+        <Text style={styles.loadingText}>Загрузка товаров...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Инвентаризация товаров</Text>
-        <TouchableOpacity style={[styles.loadBtn, loading && { opacity: 0.6 }]} onPress={fetchGoods} disabled={loading}>
-          <Text style={styles.loadBtnText}>{loading ? 'Загрузка...' : loaded ? 'Обновить' : 'Загрузить'}</Text>
+        <TouchableOpacity style={styles.loadBtn} onPress={fetchGoods} disabled={loading}>
+          <Text style={styles.loadBtnText}>{loaded ? 'Обновить' : 'Загрузить'}</Text>
         </TouchableOpacity>
       </View>
       {loaded && goods.length > 0 && (
@@ -105,8 +97,12 @@ export default function GoodsScreen() {
   );
 }
 
+import { useEffect } from 'react';
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg, padding: 16 },
+  center: { flex: 1, backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: COLORS.textDim, fontSize: 14, marginTop: 12 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   headerTitle: { color: COLORS.text, fontSize: 18, fontWeight: '700' },
   loadBtn: { backgroundColor: COLORS.green, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },

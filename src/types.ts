@@ -13,9 +13,15 @@ export interface ShiftForm {
 }
 
 export interface GoodItemTaken {
+  workerName: string;
   name: string;
   quantity: number;
   price: number;
+}
+
+export interface CashTakenItem {
+  workerName: string;
+  amount: number;
 }
 
 export interface FineInfo {
@@ -39,7 +45,9 @@ export interface SavedReport {
   photoBase64?: string;
   goodsTaken?: GoodItemTaken[];
   cashTaken?: number;
+  cashTakenItems?: CashTakenItem[];
   fine?: FineInfo;
+  salaryPaid?: boolean;
 }
 
 export interface GoodItem {

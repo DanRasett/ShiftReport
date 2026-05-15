@@ -12,6 +12,7 @@ const COLORS = {
   textDim: '#8b8d94',
   green: '#4caf93',
   red: '#e0556a',
+  yellow: '#f0c040',
 };
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
@@ -40,6 +41,7 @@ export default function HistoryScreen() {
 
   const renderReport = ({ item }: { item: SavedReport }) => {
     const isExpanded = expandedId === item.id;
+    const isPaid = item.salaryPaid === true;
     const diffText =
       item.difference > 0
         ? `Пересдача: +${formatNum(item.difference)} ₽`
@@ -52,14 +54,20 @@ export default function HistoryScreen() {
       <TouchableOpacity style={styles.reportCard} onPress={() => toggleExpand(item.id)} activeOpacity={0.7}>
         <View style={styles.reportHeader}>
           <Text style={styles.reportDate}>{formatDate(item.date)}</Text>
-          <Text style={styles.reportWorker}>{item.workerName || '—'}</Text>
+          <View style={styles.workerCol}>
+            <Text style={styles.reportWorker}>{item.workerName || '—'}</Text>
+            {isPaid && <Text style={styles.paidBadge}>💰 Выплачено</Text>}
+          </View>
           <Text style={styles.reportFact}>{formatNum(item.factTotal)} ₽</Text>
           <Text style={[styles.reportDiff, { color: diffColor }]}>{diffText}</Text>
           <Text style={styles.arrow}>{isExpanded ? '▾' : '▸'}</Text>
         </View>
         {isExpanded && (
           <View style={styles.details}>
-            <Text style={styles.detailText}>Сотрудник: {item.workerName || '—'}</Text>
+            <View style={styles.detailHeader}>
+              <Text style={styles.detailText}>Сотрудник: {item.workerName || '—'}</Text>
+              {isPaid && <Text style={styles.paidBadge}>💰 Зарплата выплачена</Text>}
+            </View>
             <Text style={styles.detailText}>
               Дэш: {formatNum(item.dashTotal)} ₽ (Нал: {formatNum(item.dashCash)}, Карта: {formatNum(item.dashCashless)})
             </Text>
@@ -67,14 +75,41 @@ export default function HistoryScreen() {
               Факт: {formatNum(item.factTotal)} ₽ (Нал: {formatNum(item.factCash)}, Карта: {formatNum(item.factCashless)})
             </Text>
             <Text style={styles.detailText}>2%: {formatNum(item.twoPercent)} ₽</Text>
-            {item.expenses.length > 0 && (
+
+            {item.goodsTaken && item.goodsTaken.length > 0 && (
               <View style={styles.expensesBlock}>
-                <Text style={styles.detailText}>Расходы:</Text>
+                <Text style={styles.detailText}>Взято товарами:</Text>
+                {item.goodsTaken.map((g, i) => (
+                  <Text key={i} style={styles.expenseDetail}>
+                    {g.name} ×{g.quantity} = {formatNum(g.quantity * g.price)} ₽
+                  </Text>
+                ))}
+              </View>
+            )}
+
+            {item.cashTaken != null && item.cashTaken > 0 && (
+              <View style={styles.expensesBlock}>
+                <Text style={styles.detailText}>Взято деньгами: {formatNum(item.cashTaken)} ₽</Text>
+              </View>
+            )}
+
+            {item.expenses && item.expenses.length > 0 && (
+              <View style={styles.expensesBlock}>
+                <Text style={styles.detailText}>Прочие расходы:</Text>
                 {item.expenses.map((e, i) => (
                   <Text key={i} style={styles.expenseDetail}>{e.name}: {e.description}</Text>
                 ))}
               </View>
             )}
+
+            {item.fine && (
+              <View style={styles.expensesBlock}>
+                <Text style={[styles.detailText, { color: COLORS.red }]}>
+                  Штраф: {formatNum(item.fine.amount)} ₽ — {item.fine.reason}
+                </Text>
+              </View>
+            )}
+
             {item.photoBase64 && (
               <View style={styles.photoBlock}>
                 <Text style={styles.detailText}>📷 Чек:</Text>
@@ -117,11 +152,24 @@ const styles = StyleSheet.create({
   },
   reportHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   reportDate: { color: COLORS.textDim, fontSize: 12, width: 45 },
-  reportWorker: { color: COLORS.green, fontSize: 13, fontWeight: '600', flex: 1 },
+  workerCol: { flex: 1 },
+  reportWorker: { color: COLORS.green, fontSize: 13, fontWeight: '600' },
+  paidBadge: {
+    color: COLORS.yellow,
+    fontSize: 10,
+    fontWeight: '700',
+    backgroundColor: '#2a2a1a',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
   reportFact: { color: COLORS.text, fontSize: 13, fontWeight: '600' },
   reportDiff: { fontSize: 12, fontWeight: '600' },
   arrow: { color: COLORS.textDim, fontSize: 16, width: 20, textAlign: 'center' },
   details: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: COLORS.border, gap: 4 },
+  detailHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   detailText: { color: COLORS.textDim, fontSize: 13 },
   expensesBlock: { marginTop: 6 },
   expenseDetail: { color: COLORS.textDim, fontSize: 12, marginLeft: 12 },
