@@ -32,7 +32,7 @@
       "bundler": "metro",
       "output": "single",
       "static": "web"
-    }
+    },
     "plugins": [
       "expo-sharing"
     ],
