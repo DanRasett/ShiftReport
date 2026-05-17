@@ -18,7 +18,9 @@ export const saveReport = async (report: SavedReport): Promise<void> => {
     dash_total: report.dashTotal, dash_cash: report.dashCash, dash_cashless: report.dashCashless,
     fact_total: report.factTotal, fact_cash: report.factCash, fact_cashless: report.factCashless,
     two_percent: report.twoPercent, difference: report.difference, expenses: report.expenses || [],
-    goods_taken: report.goodsTaken || [], cash_taken: report.cashTaken || 0, fine: report.fine || null,
+    goods_taken: report.goodsTaken || [], cash_taken_items: report.cashTakenItems || [],
+    cleaner_amount: report.cleanerAmount || 0,
+    fine: report.fine || null,
   });
 };
 
@@ -29,9 +31,11 @@ export const getHistory = async (): Promise<SavedReport[]> => {
     dashTotal: Number(row.dash_total) || 0, dashCash: Number(row.dash_cash) || 0, dashCashless: Number(row.dash_cashless) || 0,
     factTotal: Number(row.fact_total) || 0, factCash: Number(row.fact_cash) || 0, factCashless: Number(row.fact_cashless) || 0,
     twoPercent: Number(row.two_percent) || 0, difference: Number(row.difference) || 0,
-    expenses: row.expenses || [], goodsTaken: row.goods_taken || [], cashTaken: row.cash_taken || 0,
+    expenses: row.expenses || [], goodsTaken: row.goods_taken || [],
+    cashTakenItems: row.cash_taken_items || [],
+    cleanerAmount: row.cleaner_amount || 0,
     fine: row.fine || undefined, photoBase64: undefined,
-    salaryPaid: row.salary_paid || false, // ← добавили
+    salaryPaid: row.salary_paid || false,
   }));
 };
 
@@ -42,7 +46,9 @@ export const getUnpaidReports = async (): Promise<SavedReport[]> => {
     dashTotal: Number(row.dash_total) || 0, dashCash: Number(row.dash_cash) || 0, dashCashless: Number(row.dash_cashless) || 0,
     factTotal: Number(row.fact_total) || 0, factCash: Number(row.fact_cash) || 0, factCashless: Number(row.fact_cashless) || 0,
     twoPercent: Number(row.two_percent) || 0, difference: Number(row.difference) || 0,
-    expenses: row.expenses || [], goodsTaken: row.goods_taken || [], cashTaken: row.cash_taken || 0,
+    expenses: row.expenses || [], goodsTaken: row.goods_taken || [],
+    cashTakenItems: row.cash_taken_items || [],
+    cleanerAmount: row.cleaner_amount || 0,
     fine: row.fine || undefined, photoBase64: undefined,
   }));
 };
@@ -52,6 +58,19 @@ export const getUnpaidReports = async (): Promise<SavedReport[]> => {
 // ============================================================
 export const getWorkersFromSupabase = async (): Promise<any[]> => {
   return await supabase.select('workers', 'select=*&order=id.asc') || [];
+};
+
+export const getWorkersWithSettings = async (): Promise<any[]> => {
+  const data = await supabase.select('workers', 'select=*&order=id.asc');
+  return data || [];
+};
+
+export const updateWorkerSettings = async (
+  workerId: string, baseSalary: number, calculatePercent: boolean
+): Promise<void> => {
+  await supabase.update('workers', `id=eq.${workerId}`, {
+    base_salary: baseSalary, calculate_percent: calculatePercent, updated_at: new Date().toISOString(),
+  });
 };
 
 export const syncWorkersToSupabase = async (workers: any[]): Promise<void> => {
@@ -80,31 +99,34 @@ export const getUnpaidFines = async (workerName: string): Promise<FineRecord[]> 
   }));
 };
 
+export const getAllUnpaidFines = async (): Promise<FineRecord[]> => {
+  const data = await supabase.select('fines', 'select=*&paid=eq.false&order=created_at.desc');
+  return (data || []).map((f: any) => ({
+    id: String(f.id), workerName: f.worker_name, amount: f.amount, reason: f.reason, date: f.date, paid: f.paid,
+  }));
+};
+
 // ============================================================
 // Выплата зарплаты
 // ============================================================
-export const markSalaryPaid = async (reportIds: string[]): Promise<void> => {
+export const markSalaryPaid = async (reportIds: string[], workerName: string, fromDate: string, toDate: string): Promise<void> => {
   if (!reportIds.length) return;
-  
-  console.log('Обновляю отчёты:', reportIds);
-  
   for (const id of reportIds) {
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?id=eq.${id}`, {
+      await fetch(`${SUPABASE_URL}/rest/v1/reports?id=eq.${id}`, {
         method: 'PATCH',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-        },
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
         body: JSON.stringify({ salary_paid: true }),
       });
-      console.log(`Отчёт ${id}: статус ${res.status}`);
-    } catch (e: any) {
-      console.log(`Ошибка обновления отчёта ${id}:`, e.message);
-    }
+    } catch (e: any) {}
   }
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/fines?worker_name=eq.${encodeURIComponent(workerName)}&date=gte.${fromDate}&date=lte.${toDate}&paid=eq.false`, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ paid: true }),
+    });
+  } catch (e: any) {}
 };
 
 // ============================================================

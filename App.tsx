@@ -1,17 +1,19 @@
 import React from 'react';
-import { StatusBar, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
+import { StatusBar, TouchableOpacity, Text, StyleSheet, Alert, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 import ShiftScreen from './src/screens/ShiftScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import GoodsScreen from './src/screens/GoodsScreen';
 import SalaryScreen from './src/screens/SalaryScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import WorkersSettingsScreen from './src/screens/WorkersSettingsScreen';
 import { AuthProvider, useAuth } from './src/utils/AuthContext';
 
-const Tab = createBottomTabNavigator();
+const Drawer = createDrawerNavigator();
 
 const COLORS = {
+  bg: '#1a1d23',
   card: '#21242b',
   border: '#2a2d35',
   text: '#e0e0e0',
@@ -19,26 +21,92 @@ const COLORS = {
   green: '#4caf93',
 };
 
-const LogoutButton = () => {
-  const { isLoggedIn, logout } = useAuth();
-  if (!isLoggedIn) return null;
+function CustomDrawerContent(props: any) {
   return (
-    <TouchableOpacity
-      onPress={() =>
-        Alert.alert('Выход из SmartShell', 'Вы уверены?', [
-          { text: 'Отмена', style: 'cancel' },
-          { text: 'Выйти', style: 'destructive', onPress: () => logout() },
-        ])
-      }
-      style={logoutStyles.btn}
+    <DrawerContentScrollView {...props} style={{ backgroundColor: COLORS.bg }}>
+      <View style={styles.drawerHeader}>
+        <Text style={styles.drawerTitle}>ShiftReport</Text>
+        <Text style={styles.drawerSubtitle}>Меню</Text>
+      </View>
+      <DrawerItemList {...props} />
+    </DrawerContentScrollView>
+  );
+}
+
+const AppDrawer = () => {
+  const { userRoles, logout } = useAuth();
+  const isManagerOrOwner = userRoles.some(r =>
+    r.toLowerCase().includes('manager') || r.toLowerCase().includes('owner') || r.toLowerCase().includes('admin')
+  );
+
+  return (
+    <Drawer.Navigator
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
+      screenOptions={{
+        headerStyle: { backgroundColor: COLORS.card },
+        headerTintColor: COLORS.text,
+        drawerStyle: { backgroundColor: COLORS.card },
+        drawerActiveTintColor: COLORS.green,
+        drawerInactiveTintColor: COLORS.textDim,
+        drawerLabelStyle: { fontSize: 15 },
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={() =>
+              Alert.alert('Выход из SmartShell', 'Вы уверены?', [
+                { text: 'Отмена', style: 'cancel' },
+                { text: 'Выйти', style: 'destructive', onPress: () => logout() },
+              ])
+            }
+            style={styles.logoutBtn}
+          >
+            <Text style={styles.logoutText}>Выйти</Text>
+          </TouchableOpacity>
+        ),
+      }}
     >
-      <Text style={logoutStyles.text}>Выйти</Text>
-    </TouchableOpacity>
+      <Drawer.Screen name="Смена" component={ShiftScreen} options={{ title: '📝 Сдача смены' }} />
+      <Drawer.Screen name="Товар" component={GoodsScreen} options={{ title: '📦 Инвентаризация' }} />
+      {isManagerOrOwner && (
+        <Drawer.Screen name="Зарплата" component={SalaryScreen} options={{ title: '💰 Расчёт зарплаты' }} />
+      )}
+      {isManagerOrOwner && (
+        <Drawer.Screen name="Сотрудники" component={WorkersSettingsScreen} options={{ title: '👥 Настройки сотрудников' }} />
+      )}
+      <Drawer.Screen name="История" component={HistoryScreen} options={{ title: '📋 История отчётов' }} />
+      <Drawer.Screen name="Настройки" component={SettingsScreen} options={{ title: '⚙️ Настройки' }} />
+    </Drawer.Navigator>
   );
 };
 
-const logoutStyles = StyleSheet.create({
-  btn: {
+export default function App() {
+  return (
+    <AuthProvider>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.bg} />
+      <NavigationContainer>
+        <AppDrawer />
+      </NavigationContainer>
+    </AuthProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  drawerHeader: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2a2d35',
+    marginBottom: 8,
+  },
+  drawerTitle: {
+    color: '#e0e0e0',
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  drawerSubtitle: {
+    color: '#8b8d94',
+    fontSize: 13,
+    marginTop: 4,
+  },
+  logoutBtn: {
     marginRight: 16,
     backgroundColor: '#2a1a1e',
     borderWidth: 1,
@@ -47,31 +115,9 @@ const logoutStyles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 10,
   },
-  text: { color: '#e0556a', fontSize: 12, fontWeight: '600' },
+  logoutText: {
+    color: '#e0556a',
+    fontSize: 12,
+    fontWeight: '600',
+  },
 });
-
-export default function App() {
-  return (
-    <AuthProvider>
-      <StatusBar barStyle="light-content" backgroundColor="#1a1d23" />
-      <NavigationContainer>
-        <Tab.Navigator
-          screenOptions={{
-            headerStyle: { backgroundColor: COLORS.card },
-            headerTitleStyle: { color: COLORS.text },
-            tabBarStyle: { backgroundColor: COLORS.card, borderTopColor: COLORS.border },
-            tabBarActiveTintColor: COLORS.green,
-            tabBarInactiveTintColor: COLORS.textDim,
-            headerRight: () => <LogoutButton />,
-          }}
-        >
-          <Tab.Screen name="Смена" component={ShiftScreen} options={{ headerTitle: 'Сдача смены', tabBarLabel: '📝 Смена' }} />
-          <Tab.Screen name="Товар" component={GoodsScreen} options={{ headerTitle: 'Инвентаризация', tabBarLabel: '📦 Товар' }} />
-          <Tab.Screen name="Зарплата" component={SalaryScreen} options={{ headerTitle: 'Расчёт зарплаты', tabBarLabel: '💰 Зарплата' }} />
-          <Tab.Screen name="История" component={HistoryScreen} options={{ headerTitle: 'История отчётов', tabBarLabel: '📋 История' }} />
-          <Tab.Screen name="Настройки" component={SettingsScreen} options={{ headerTitle: 'Настройки', tabBarLabel: '⚙️ Настройки' }} />
-        </Tab.Navigator>
-      </NavigationContainer>
-    </AuthProvider>
-  );
-}

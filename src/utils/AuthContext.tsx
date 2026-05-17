@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { loginToSmartShell, logoutFromSmartShell, getDetailedWorkers } from './smartshell';
+import { loginToSmartShell, logoutFromSmartShell, getDetailedWorkers, getUserRole } from './smartshell';
 import { getCredentials, saveCredentials, removeCredentials, syncWorkersToSupabase } from './storage';
 
 const COLORS = {
@@ -27,12 +27,14 @@ interface AuthContextType {
   isLoggedIn: boolean;
   showLoginModal: () => void;
   logout: () => Promise<void>;
+  userRoles: string[];
 }
 
 const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   showLoginModal: () => {},
   logout: async () => {},
+  userRoles: [],
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -44,6 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [tempLogin, setTempLogin] = useState('');
   const [tempPassword, setTempPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
 
   useEffect(() => {
     autoLogin();
@@ -56,6 +59,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoggedIn(success);
       if (success) {
         syncWorkersFromShell();
+        const roles = await getUserRole();
+        setUserRoles(roles);
       } else {
         setShowLogin(true);
       }
@@ -86,6 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       if (success) {
         await saveCredentials(tempLogin.trim(), tempPassword);
+        const roles = await getUserRole();
+        setUserRoles(roles);
         setIsLoggedIn(true);
         setShowLogin(false);
         setTempLogin('');
@@ -114,11 +121,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Ошибка выхода:', e);
     }
     setIsLoggedIn(false);
+    setUserRoles([]);
     setShowLogin(true);
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, showLoginModal, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, showLoginModal, logout, userRoles }}>
       {children}
 
       <Modal visible={showLogin && !isLoggedIn} transparent animationType="fade">

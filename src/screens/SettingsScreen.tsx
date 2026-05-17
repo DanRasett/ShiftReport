@@ -63,6 +63,7 @@ export default function SettingsScreen() {
     { key: 'showFact', label: 'Факт' }, { key: 'showGoodsTaken', label: 'Взято товарами под зарплату' },
     { key: 'showCashTaken', label: 'Взято деньгами из кассы' }, { key: 'showFine', label: 'Штраф' },
     { key: 'showOtherExpenses', label: 'Прочие расходы' }, { key: 'showPhoto', label: 'Фото чека' },
+    { key: 'showCleaner', label: 'Уборщица' },
   ];
 
   if (loading) return <View style={styles.loading}><ActivityIndicator size="large" color={COLORS.green} /><Text style={styles.loadingText}>Загрузка настроек...</Text></View>;

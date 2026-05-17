@@ -3,7 +3,6 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   Alert, Image, ActionSheetIOS, Platform,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Sharing from 'expo-sharing';
@@ -31,7 +30,8 @@ const buildReportText = (
   form: ShiftForm, calc: ReturnType<typeof calculateShift>, workerName: string,
   goodsTaken: { workerName: string; goodsName: string; quantity: string; price: string }[],
   cashTaken: { workerName: string; amount: string }[],
-  fineAmount: string, fineReason: string, isManager: boolean
+  fineAmount: string, fineReason: string, isManager: boolean,
+  cleanerAmount: string,
 ) => {
   const expensesText = form.expenses.filter(e => e.name.trim() || e.description.trim()).map(e => `${e.name}: ${e.description}`).join('\n');
   const goodsText = goodsTaken.filter(g => g.workerName.trim() && g.goodsName.trim()).map(g => `${g.workerName}: ${g.goodsName} ×${g.quantity || '0'} = ${formatNum((parseInt(g.quantity) || 0) * (parseInt(g.price) || 0))} ₽`).join('\n');
@@ -39,7 +39,7 @@ const buildReportText = (
   const diffText = calc.difference > 0 ? `Пересдача: +${formatNum(calc.difference)} ₽` : calc.difference < 0 ? `Недосдача: ${formatNum(calc.difference)} ₽` : `0 ₽ (сходится)`;
   const percentLabel = calc.dashTotal > 10000 ? '3%' : '2%';
 
-  let text = `Сдача смены\nСотрудник: ${workerName || '—'}\n---\nДэш: ${formatNum(calc.dashTotal)}\nНал: ${formatNum(parseFloat(form.dashCash) || 0)}\nКарта: ${formatNum(parseFloat(form.dashCashless) || 0)}\n---\nФакт: ${formatNum(calc.factTotal)}\nНал: ${formatNum(parseFloat(form.factCash) || 0)}\nКарта: ${formatNum(parseFloat(form.factCashless) || 0)}\n---\nВзято товарами:\n${goodsText || '—'}\nВзято деньгами:\n${cashText || '—'}\n---\nРасходы (старые):\n${expensesText || '—'}`;
+  let text = `Сдача смены\nСотрудник: ${workerName || '—'}\n---\nДэш: ${formatNum(calc.dashTotal)}\nНал: ${formatNum(parseFloat(form.dashCash) || 0)}\nКарта: ${formatNum(parseFloat(form.dashCashless) || 0)}\n---\nФакт: ${formatNum(calc.factTotal)}\nНал: ${formatNum(parseFloat(form.factCash) || 0)}\nКарта: ${formatNum(parseFloat(form.factCashless) || 0)}\nУборщица: ${cleanerAmount ? formatNum(parseInt(cleanerAmount)) : '0'} ₽\n---\nВзято товарами:\n${goodsText || '—'}\nВзято деньгами:\n${cashText || '—'}\n---\nРасходы (старые):\n${expensesText || '—'}`;
   if (isManager) text += `\n---\nШтраф: ${fineAmount ? formatNum(parseInt(fineAmount)) + ' ₽ — ' + (fineReason || 'Не указана') : 'Нет'}`;
   text += `\n---\n${percentLabel}: ${formatNum(calc.twoPercent)}\n---\n${diffText}`;
   return text;
@@ -58,6 +58,7 @@ export default function ShiftScreen() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [goodsTaken, setGoodsTaken] = useState<{ workerName: string; goodsName: string; quantity: string; price: string }[]>([{ workerName: '', goodsName: '', quantity: '', price: '' }]);
   const [cashTaken, setCashTaken] = useState<{ workerName: string; amount: string }[]>([{ workerName: '', amount: '' }]);
+  const [cleanerAmount, setCleanerAmount] = useState('');
   const [fineAmount, setFineAmount] = useState('');
   const [fineReason, setFineReason] = useState('');
   const [settings, setSettings] = useState<ShiftSettings | null>(null);
@@ -67,17 +68,17 @@ export default function ShiftScreen() {
   const [goodsList, setGoodsList] = useState<{ id: string; title: string; cost: number }[]>([]);
   const [showWorkerPicker, setShowWorkerPicker] = useState(false);
   const [showGoodsPicker, setShowGoodsPicker] = useState(false);
-  const [showCashWorkerPicker, setShowCashWorkerPicker] = useState(false);
   const [currentGoodsIndex, setCurrentGoodsIndex] = useState<number | null>(null);
   const [currentPickerTarget, setCurrentPickerTarget] = useState<'worker' | 'goodsWorker' | 'cashWorker' | null>(null);
   const userRoles = useRef<string[]>([]);
-  const calc = calculateShift(form);
+
+  const calc = calculateShift(form, parseInt(cleanerAmount) || 0);
   const isManager = () => userRoles.current.some(r => r.toLowerCase().includes('manager') || r.toLowerCase().includes('owner') || r.toLowerCase().includes('admin'));
   const showAllBlocks = !isManager() || isActiveOperator;
 
   useEffect(() => { loadDraft(); loadShiftSettings(); }, []);
   useEffect(() => { if (isFocused) loadShiftSettings(); }, [isFocused]);
-  useEffect(() => { const t = setTimeout(() => saveDraft({ form, workerName, goodsTaken, cashTaken, fineAmount, fineReason }), 500); return () => clearTimeout(t); }, [form, workerName, goodsTaken, cashTaken, fineAmount, fineReason]);
+  useEffect(() => { const t = setTimeout(() => saveDraft({ form, workerName, goodsTaken, cashTaken, cleanerAmount, fineAmount, fineReason }), 500); return () => clearTimeout(t); }, [form, workerName, goodsTaken, cashTaken, cleanerAmount, fineAmount, fineReason]);
   useEffect(() => { if (isLoggedIn && isShellLoggedIn()) { fetchAllData(); setAutoRefresh(true); } }, [isLoggedIn]);
   useEffect(() => {
     if (!autoRefresh || !isShellLoggedIn()) return;
@@ -87,9 +88,19 @@ export default function ShiftScreen() {
 
   const loadDraft = async () => {
     const d = await getDraft();
-    if (d) { if (d.form) setForm(d.form); if (d.workerName) setWorkerName(d.workerName); if (d.goodsTaken) setGoodsTaken(d.goodsTaken); if (d.cashTaken) setCashTaken(d.cashTaken); if (d.fineAmount) setFineAmount(d.fineAmount); if (d.fineReason) setFineReason(d.fineReason); }
+    if (d) {
+      if (d.form) setForm(d.form);
+      if (d.workerName) setWorkerName(d.workerName);
+      if (d.goodsTaken) setGoodsTaken(d.goodsTaken);
+      if (d.cashTaken) setCashTaken(d.cashTaken);
+      if (d.cleanerAmount) setCleanerAmount(d.cleanerAmount);
+      if (d.fineAmount) setFineAmount(d.fineAmount);
+      if (d.fineReason) setFineReason(d.fineReason);
+    }
   };
+
   const loadShiftSettings = async () => { const s = await getSettings(); setSettings(s); };
+
   const fetchAllData = async () => {
     try {
       const [data, w, roles, goods] = await Promise.all([getShiftData(), getWorkersFromSupabase(), getUserRole(), getGoodsWithPrices()]);
@@ -116,24 +127,12 @@ export default function ShiftScreen() {
   const removeCashTaken = (i: number) => setCashTaken(p => p.filter((_, idx) => idx !== i));
 
   const selectWorker = (item: { id: string; label: string }) => {
-    if (currentPickerTarget === 'worker') {
-      setWorkerName(item.label);
-    } else if (currentPickerTarget === 'goodsWorker' && currentGoodsIndex !== null) {
-      updateGoodsTaken(currentGoodsIndex, 'workerName', item.label);
-    } else if (currentPickerTarget === 'cashWorker') {
-      // Находим последнюю пустую строку в cashTaken и заполняем её
-      setCashTaken(prev => {
-        const updated = [...prev];
-        // Ищем первую строку с пустым workerName
-        const emptyIndex = updated.findIndex(c => !c.workerName.trim());
-        if (emptyIndex >= 0) {
-          updated[emptyIndex] = { ...updated[emptyIndex], workerName: item.label };
-        }
-        return updated;
-      });
+    if (currentPickerTarget === 'worker') setWorkerName(item.label);
+    else if (currentPickerTarget === 'goodsWorker' && currentGoodsIndex !== null) updateGoodsTaken(currentGoodsIndex, 'workerName', item.label);
+    else if (currentPickerTarget === 'cashWorker') {
+      setCashTaken(prev => { const updated = [...prev]; const emptyIndex = updated.findIndex(c => !c.workerName.trim()); if (emptyIndex >= 0) updated[emptyIndex] = { ...updated[emptyIndex], workerName: item.label }; return updated; });
     }
-    setShowWorkerPicker(false);
-    setCurrentPickerTarget(null);
+    setShowWorkerPicker(false); setCurrentPickerTarget(null);
     if (item.label) getUnpaidFines(item.label).then(setUnpaidFines);
   };
   const selectGoodsItem = (item: { id: string; label: string; sublabel?: string }) => {
@@ -166,7 +165,7 @@ export default function ShiftScreen() {
   const handleShare = async () => {
     if (!form.factCash && !form.factCashless) { Alert.alert('Ошибка', 'Заполните Факт'); return; }
     setSending(true); setAutoRefresh(false);
-    const text = buildReportText(form, calc, workerName, goodsTaken, cashTaken, fineAmount, fineReason, isManager());
+    const text = buildReportText(form, calc, workerName, goodsTaken, cashTaken, fineAmount, fineReason, isManager(), cleanerAmount);
     const fe = form.expenses.filter(e => e.name.trim() || e.description.trim());
     const rid = Date.now() * 1000 + Math.floor(Math.random() * 1000);
     const report: SavedReport = {
@@ -177,16 +176,17 @@ export default function ShiftScreen() {
       photoBase64: photoBase64 || undefined,
       goodsTaken: goodsTaken.filter(g => g.workerName.trim() && g.goodsName.trim()).map(g => ({ workerName: g.workerName, name: g.goodsName, quantity: parseInt(g.quantity) || 0, price: parseInt(g.price) || 0 })),
       cashTakenItems: cashTaken.filter(c => c.workerName.trim() && c.amount.trim()).map(c => ({ workerName: c.workerName, amount: parseInt(c.amount) || 0 })),
+      cleanerAmount: parseInt(cleanerAmount) || 0,
       fine: isManager() && parseInt(fineAmount) > 0 ? { amount: parseInt(fineAmount), reason: fineReason || 'Не указана' } : undefined,
     };
     await saveDraft({}); await clearDraft();
-    setTimeout(() => { supabase.insert('reports', { id: rid, date: report.date, worker_name: report.workerName || '', dash_total: report.dashTotal, dash_cash: report.dashCash, dash_cashless: report.dashCashless, fact_total: report.factTotal, fact_cash: report.factCash, fact_cashless: report.factCashless, two_percent: report.twoPercent, difference: report.difference, expenses: report.expenses || [], goods_taken: report.goodsTaken || [], cash_taken_items: report.cashTakenItems || [], fine: report.fine || null }); }, 100);
+    setTimeout(() => { supabase.insert('reports', { id: rid, date: report.date, worker_name: report.workerName || '', dash_total: report.dashTotal, dash_cash: report.dashCash, dash_cashless: report.dashCashless, fact_total: report.factTotal, fact_cash: report.factCash, fact_cashless: report.factCashless, two_percent: report.twoPercent, difference: report.difference, expenses: report.expenses || [], goods_taken: report.goodsTaken || [], cash_taken_items: report.cashTakenItems || [], cleaner_amount: report.cleanerAmount || 0, fine: report.fine || null }); }, 100);
     setTimeout(async () => {
       try { if (photoUri) await Sharing.shareAsync(photoUri, { mimeType: 'image/jpeg', dialogTitle: text }); else { const { Share } = require('react-native'); await Share.share({ message: text }); } } catch (e: any) {}
     }, 300);
     setForm({ dashCash: '', dashCashless: '', factCash: '', factCashless: '', expenses: [{ id: String(Date.now()), name: '', description: '' }] });
     setPhotoUri(null); setPhotoBase64(null); setGoodsTaken([{ workerName: '', goodsName: '', quantity: '', price: '' }]); setCashTaken([{ workerName: '', amount: '' }]);
-    setFineAmount(''); setFineReason(''); setSending(false);
+    setCleanerAmount(''); setFineAmount(''); setFineReason(''); setSending(false);
     setTimeout(() => { setAutoRefresh(true); fetchAllData(); }, 2000);
   };
 
@@ -209,6 +209,14 @@ export default function ShiftScreen() {
       {showAllBlocks && (
         <>
           {settings?.showFact !== false && (<View style={styles.card}><Text style={styles.cardTitle}>Факт</Text><View style={styles.row}><View style={styles.field}><Text style={styles.label}>Нал</Text><TextInput style={styles.input} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textDim} value={form.factCash} onChangeText={v => setForm({ ...form, factCash: v })} /></View><View style={styles.field}><Text style={styles.label}>Карта</Text><TextInput style={styles.input} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textDim} value={form.factCashless} onChangeText={v => setForm({ ...form, factCashless: v })} /></View></View><Text style={styles.totalRow}>Итого: <Text style={styles.totalNum}>{formatNum(calc.factTotal)} ₽</Text></Text></View>)}
+
+          {settings?.showCleaner !== false && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Уборщица</Text>
+              <TextInput style={styles.input} keyboardType="numeric" placeholder="Сумма" placeholderTextColor={COLORS.textDim} value={cleanerAmount} onChangeText={setCleanerAmount} />
+            </View>
+          )}
+
           {settings?.showGoodsTaken !== false && (
             <View style={styles.card}><Text style={styles.cardTitle}>Взято товарами под зарплату</Text>
               {goodsTaken.map((item, index) => (
@@ -216,7 +224,7 @@ export default function ShiftScreen() {
                   <TouchableOpacity style={styles.pickerField} onPress={() => { setCurrentPickerTarget('goodsWorker'); setCurrentGoodsIndex(index); setShowWorkerPicker(true); }}><Text style={[styles.pickerText, !item.workerName && { color: COLORS.textDim }]}>{item.workerName || 'Кто'}</Text></TouchableOpacity>
                   <TouchableOpacity style={styles.pickerField} onPress={() => openGoodsPicker(index)}><Text style={[styles.pickerText, !item.goodsName && { color: COLORS.textDim }]}>{item.goodsName || 'Товар'}</Text></TouchableOpacity>
                   <View style={styles.expenseSmall}><TextInput style={styles.input} placeholder="Кол" keyboardType="numeric" value={item.quantity} onChangeText={v => updateGoodsTaken(index, 'quantity', v)} /></View>
-                  <View style={styles.expenseSmall}><TextInput style={styles.input} placeholder="Цена" keyboardType="numeric" value={item.price} editable={false} /></View>
+                  <View style={styles.expenseSmall}><Text style={styles.priceText}>{formatNum((parseInt(item.quantity) || 0) * (parseInt(item.price) || 0))} ₽</Text></View>
                   <TouchableOpacity style={styles.removeBtn} onPress={() => removeGoodsTaken(index)}><Text style={styles.removeBtnText}>✕</Text></TouchableOpacity>
                 </View>
               ))}<TouchableOpacity style={styles.addBtn} onPress={addGoodsTaken}><Text style={styles.addBtnText}>+ Добавить</Text></TouchableOpacity></View>
@@ -271,6 +279,7 @@ const styles = StyleSheet.create({
   goodsRow: { flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' },
   expenseRow: { flexDirection: 'row', gap: 8, marginBottom: 8, alignItems: 'center' },
   expenseName: { flex: 2 }, expenseDesc: { flex: 2 }, expenseSmall: { flex: 1 },
+  priceText: { color: COLORS.textDim, fontSize: 14, paddingVertical: 12, textAlign: 'right' },
   removeBtn: { width: 28, height: 28, justifyContent: 'center', alignItems: 'center' },
   removeBtnText: { color: COLORS.red, fontSize: 16 },
   addBtn: { marginTop: 8, backgroundColor: COLORS.inputBg, borderWidth: 1, borderColor: COLORS.border, borderStyle: 'dashed', borderRadius: 8, padding: 12, alignItems: 'center' },

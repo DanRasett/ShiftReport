@@ -5,12 +5,9 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SavedReport } from '../types';
-import { getUnpaidReports } from '../utils/storage';
+import { getUnpaidReports, markSalaryPaid, getAllUnpaidFines, getWorkersWithSettings } from '../utils/storage';
 import { getUserRole, loginToSmartShell } from '../utils/smartshell';
 import { getCredentials } from '../utils/storage';
-
-const SUPABASE_URL = 'https://glilovtznlhiskipkrkk.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsaWxvdnR6bmxoaXNraXBrcmtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzOTE0NjksImV4cCI6MjA5Mzk2NzQ2OX0.5JbTDMdq7wRoNPK54DD7j7KwWaZtJjGlWm1aD_xe_co';
 
 const COLORS = {
   bg: '#1a1d23', card: '#21242b', border: '#2a2d35', text: '#e0e0e0',
@@ -24,6 +21,7 @@ interface WorkerData {
   base: number; percent: number; goodsExpenses: number; cashExpenses: number;
   totalDiff: number; fines: { amount: number; reason: string; date: string }[];
   total: number; shifts: SavedReport[];
+  goodsDetails: { name: string; quantity: number; total: number }[];
 }
 
 export default function SalaryScreen() {
@@ -58,14 +56,24 @@ export default function SalaryScreen() {
       const to = `${ty}-${String(tm).padStart(2, '0')}-${String(td).padStart(2, '0')}`;
 
       const allReports = await getUnpaidReports();
-      console.log('Всего неоплаченных отчётов:', allReports.length);
-      
+      const allUnpaidFines = await getAllUnpaidFines();
+      const workersSettings = await getWorkersWithSettings();
+
+      const workerSettingsMap: Record<string, { baseSalary: number; calculatePercent: boolean }> = {};
+      workersSettings.forEach((w: any) => {
+        const fullName = [w.first_name, w.last_name].filter(Boolean).join(' ');
+        if (fullName) {
+          workerSettingsMap[fullName] = {
+            baseSalary: Number(w.base_salary) || 1400,
+            calculatePercent: w.calculate_percent !== false,
+          };
+        }
+      });
+
       const filtered = allReports.filter(r => {
         const reportDate = r.date.substring(0, 10);
         return reportDate >= from && reportDate <= to;
       });
-      
-      console.log('Отфильтровано отчётов:', filtered.length);
 
       if (filtered.length === 0) {
         Alert.alert('Нет данных', 'За выбранный период нет неоплаченных отчётов');
@@ -81,141 +89,137 @@ export default function SalaryScreen() {
       });
 
       const result: Record<string, WorkerData> = {};
-      Object.entries(byWorker).forEach(([worker, shifts]) => {
-        let base = 0, percent = 0, goodsExpenses = 0, cashExpenses = 0, totalDiff = 0;
-        const fines: { amount: number; reason: string; date: string }[] = [];
-        
-        shifts.forEach(s => {
-          base += 1400;
-          percent += s.twoPercent || 0;
-          totalDiff += s.difference || 0;
-          if (s.goodsTaken) {
-            s.goodsTaken.forEach(g => {
-              goodsExpenses += (g.quantity || 0) * (g.price || 0);
-            });
-          }
-          cashExpenses += s.cashTaken || 0;
-          if (s.fine) {
-            fines.push({
-              amount: s.fine.amount,
-              reason: s.fine.reason,
-              date: s.date.substring(0, 10),
-            });
-          }
-        });
-        
-        const totalFines = fines.reduce((s, f) => s + f.amount, 0);
+
+      Object.keys(byWorker).forEach(worker => {
         result[worker] = {
-          base, percent, goodsExpenses, cashExpenses, totalDiff, fines,
-          total: base + percent + totalDiff - goodsExpenses - cashExpenses - totalFines,
-          shifts,
+          base: 0, percent: 0, goodsExpenses: 0, cashExpenses: 0,
+          totalDiff: 0, fines: [], total: 0, shifts: [],
+          goodsDetails: [],
         };
       });
 
-      console.log('Результат расчёта:', Object.keys(result).length, 'сотрудников');
+      Object.entries(byWorker).forEach(([worker, shifts]) => {
+        const settings = workerSettingsMap[worker] || { baseSalary: 1400, calculatePercent: true };
+
+        shifts.forEach(s => {
+          result[worker].base += settings.baseSalary;
+          if (settings.calculatePercent) {
+            result[worker].percent += s.twoPercent || 0;
+          }
+          result[worker].totalDiff += s.difference || 0;
+          result[worker].shifts.push(s);
+
+          if (s.fine) {
+            result[worker].fines.push({ amount: s.fine.amount, reason: s.fine.reason, date: s.date.substring(0, 10) });
+          }
+
+          if (s.goodsTaken) {
+            s.goodsTaken.forEach(g => {
+              const takenByWorker = (g.workerName || worker).trim();
+              const amount = (g.quantity || 0) * (g.price || 0);
+
+              // Добавляем в детализацию товаров для того, кто взял
+              if (!result[takenByWorker]) {
+                result[takenByWorker] = {
+                  base: 0, percent: 0, goodsExpenses: 0, cashExpenses: 0,
+                  totalDiff: 0, fines: [], total: 0, shifts: [],
+                  goodsDetails: [],
+                };
+              }
+
+              // Ищем товар в goodsDetails
+              const existingGood = result[takenByWorker].goodsDetails.find(d => d.name === g.name);
+              if (existingGood) {
+                existingGood.quantity += g.quantity || 0;
+                existingGood.total += amount;
+              } else {
+                result[takenByWorker].goodsDetails.push({
+                  name: g.name,
+                  quantity: g.quantity || 0,
+                  total: amount,
+                });
+              }
+
+              if (takenByWorker !== worker) {
+                result[takenByWorker].goodsExpenses += amount;
+              } else {
+                result[worker].goodsExpenses += amount;
+              }
+            });
+          }
+
+          if (s.cashTakenItems) {
+            s.cashTakenItems.forEach(item => {
+              const takenByWorker = (item.workerName || worker).trim();
+              const amount = item.amount || 0;
+              if (takenByWorker && takenByWorker !== worker) {
+                if (!result[takenByWorker]) {
+                  result[takenByWorker] = {
+                    base: 0, percent: 0, goodsExpenses: 0, cashExpenses: 0,
+                    totalDiff: 0, fines: [], total: 0, shifts: [],
+                    goodsDetails: [],
+                  };
+                }
+                result[takenByWorker].cashExpenses += amount;
+              } else {
+                result[worker].cashExpenses += amount;
+              }
+            });
+          }
+        });
+      });
+
+      Object.keys(result).forEach(worker => {
+        const workerFinesFromTable = allUnpaidFines.filter(f =>
+          f.workerName === worker && f.date.substring(0, 10) >= from && f.date.substring(0, 10) <= to
+        );
+        workerFinesFromTable.forEach(f => {
+          result[worker].fines.push({ amount: f.amount, reason: f.reason, date: f.date.substring(0, 10) });
+        });
+        const d = result[worker];
+        const totalFines = d.fines.reduce((s, f) => s + f.amount, 0);
+        d.total = d.base + d.percent + d.totalDiff - d.goodsExpenses - d.cashExpenses - totalFines;
+      });
+
       setSalaryData(result);
     } catch (e: any) {
-      console.error('Ошибка расчёта:', e);
       Alert.alert('Ошибка', 'Не удалось рассчитать: ' + e.message);
     }
     setCalculating(false);
   };
 
   const handlePaySalary = async () => {
-    const ids: string[] = [];
-    Object.values(salaryData).forEach(data => {
-      data.shifts.forEach(s => ids.push(s.id));
-    });
-
-    console.log('Начинаю выплату. ID отчётов:', ids);
-
-    if (ids.length === 0) {
-      Alert.alert('Нет данных', 'Нечего выплачивать');
-      return;
-    }
-
+    if (Object.keys(salaryData).length === 0) { Alert.alert('Нет данных', 'Сначала рассчитайте зарплату'); return; }
+    const [fd, fm, fy] = fromDate.split('.').map(Number);
+    const [td, tm, ty] = toDate.split('.').map(Number);
+    const from = `${fy}-${String(fm).padStart(2, '0')}-${String(fd).padStart(2, '0')}`;
+    const to = `${ty}-${String(tm).padStart(2, '0')}-${String(td).padStart(2, '0')}`;
     setPaying(true);
     let ok = 0, err = 0;
-
-    for (const id of ids) {
-      try {
-        console.log(`Обновляю отчёт ${id}...`);
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?id=eq.${id}`, {
-          method: 'PATCH',
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal',
-          },
-          body: JSON.stringify({ salary_paid: true }),
-        });
-
-        if (res.ok) {
-          ok++;
-          console.log(`✅ Отчёт ${id}: успешно`);
-        } else {
-          err++;
-          const text = await res.text();
-          console.log(`❌ Отчёт ${id}: ошибка ${res.status} - ${text}`);
-        }
-      } catch (e: any) {
-        err++;
-        console.log(`💥 Отчёт ${id}: исключение - ${e.message}`);
-      }
+    for (const [workerName, data] of Object.entries(salaryData)) {
+      const reportIds = data.shifts.map(s => s.id);
+      try { await markSalaryPaid(reportIds, workerName, from, to); ok++; }
+      catch (e: any) { err++; }
     }
-
-    setPaying(false);
-    setSalaryData({});
-    console.log(`Готово: ${ok} успешно, ${err} ошибок`);
-    Alert.alert('Готово', `Успешно: ${ok}, Ошибок: ${err}`);
+    setPaying(false); setSalaryData({});
+    Alert.alert('Готово', `Выплачено: ${ok}, Ошибок: ${err}`);
   };
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.green} />
-        <Text style={styles.loadingText}>Проверка доступа...</Text>
-      </View>
-    );
-  }
-
-  if (!isManagerOrOwner()) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.lockedCard}>
-          <Text style={styles.lockedIcon}>🔒</Text>
-          <Text style={styles.lockedTitle}>Доступ ограничен</Text>
-          <Text style={styles.lockedText}>Только для менеджеров и владельцев</Text>
-          <Text style={styles.lockedSubText}>Ваши роли: {roles.join(', ') || 'не определены'}</Text>
-        </View>
-      </View>
-    );
-  }
+  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.green} /><Text style={styles.loadingText}>Проверка доступа...</Text></View>;
+  if (!isManagerOrOwner()) return <View style={styles.container}><View style={styles.lockedCard}><Text style={styles.lockedIcon}>🔒</Text><Text style={styles.lockedTitle}>Доступ ограничен</Text></View></View>;
 
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Расчёт зарплаты</Text>
-
-      {/* Выбор периода */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Период</Text>
         <View style={styles.dateRow}>
-          <View style={styles.dateField}>
-            <Text style={styles.label}>С (ДД.ММ.ГГГГ)</Text>
-            <TextInput style={styles.input} placeholder="01.05.2025" placeholderTextColor={COLORS.textDim} value={fromDate} onChangeText={setFromDate} keyboardType="numeric" />
-          </View>
-          <View style={styles.dateField}>
-            <Text style={styles.label}>По (ДД.ММ.ГГГГ)</Text>
-            <TextInput style={styles.input} placeholder="10.05.2025" placeholderTextColor={COLORS.textDim} value={toDate} onChangeText={setToDate} keyboardType="numeric" />
-          </View>
+          <View style={styles.dateField}><Text style={styles.label}>С (ДД.ММ.ГГГГ)</Text><TextInput style={styles.input} placeholder="01.05.2025" placeholderTextColor={COLORS.textDim} value={fromDate} onChangeText={setFromDate} keyboardType="numeric" /></View>
+          <View style={styles.dateField}><Text style={styles.label}>По (ДД.ММ.ГГГГ)</Text><TextInput style={styles.input} placeholder="10.05.2025" placeholderTextColor={COLORS.textDim} value={toDate} onChangeText={setToDate} keyboardType="numeric" /></View>
         </View>
-        <TouchableOpacity style={[styles.calcBtn, calculating && { opacity: 0.6 }]} onPress={calculate} disabled={calculating}>
-          <Text style={styles.calcBtnText}>{calculating ? 'Расчёт...' : 'Рассчитать'}</Text>
-        </TouchableOpacity>
+        <TouchableOpacity style={[styles.calcBtn, calculating && { opacity: 0.6 }]} onPress={calculate} disabled={calculating}><Text style={styles.calcBtnText}>{calculating ? 'Расчёт...' : 'Рассчитать'}</Text></TouchableOpacity>
       </View>
 
-      {/* Результаты */}
       {Object.keys(salaryData).length > 0 && (
         <>
           {Object.entries(salaryData).map(([worker, data]) => (
@@ -223,7 +227,6 @@ export default function SalaryScreen() {
               <Text style={styles.workerName}>{worker}</Text>
               <Text style={styles.shiftCount}>Смен: {data.shifts.length}</Text>
 
-              {/* Детализация по сменам */}
               <View style={styles.shiftsBlock}>
                 <Text style={styles.shiftsTitle}>Смены:</Text>
                 {data.shifts.map((s, i) => {
@@ -235,11 +238,13 @@ export default function SalaryScreen() {
                       </Text>
                       {s.goodsTaken && s.goodsTaken.length > 0 && (
                         <Text style={styles.shiftDetail}>
-                          Товары: {s.goodsTaken.map(g => `${g.name} ×${g.quantity} = ${formatNum(g.quantity * g.price)} ₽`).join(', ')}
+                          Товары: {s.goodsTaken.map(g => `${g.workerName ? g.workerName + ': ' : ''}${g.name} ×${g.quantity} = ${formatNum(g.quantity * g.price)} ₽`).join(', ')}
                         </Text>
                       )}
-                      {s.cashTaken && s.cashTaken > 0 && (
-                        <Text style={styles.shiftDetail}>Взято деньгами: {formatNum(s.cashTaken)} ₽</Text>
+                      {s.cashTakenItems && s.cashTakenItems.length > 0 && (
+                        <Text style={styles.shiftDetail}>
+                          Деньги: {s.cashTakenItems.map(c => `${c.workerName ? c.workerName + ': ' : ''}${formatNum(c.amount)} ₽`).join(', ')}
+                        </Text>
                       )}
                       {s.fine && (
                         <Text style={[styles.shiftDetail, { color: COLORS.red }]}>
@@ -254,7 +259,7 @@ export default function SalaryScreen() {
               <View style={styles.divider} />
 
               <View style={styles.salaryRow}>
-                <Text style={styles.salaryLabel}>Базовая ставка ({data.shifts.length} × 1400):</Text>
+                <Text style={styles.salaryLabel}>Базовая ставка ({data.shifts.length} смен):</Text>
                 <Text style={styles.salaryValue}>{formatNum(data.base)} ₽</Text>
               </View>
               <View style={styles.salaryRow}>
@@ -269,14 +274,39 @@ export default function SalaryScreen() {
                   </Text>
                 </View>
               )}
+  
+
+
+              {/* Взято товарами — с детализацией */}
               <View style={styles.salaryRow}>
                 <Text style={styles.salaryLabel}>Взято товарами:</Text>
                 <Text style={[styles.salaryValue, { color: COLORS.red }]}>-{formatNum(data.goodsExpenses)} ₽</Text>
               </View>
+              {data.goodsDetails && data.goodsDetails.length > 0 && (
+                <View style={styles.goodsDetailsBlock}>
+                  {data.goodsDetails.map((g, i) => (
+                    <Text key={i} style={styles.goodsDetailText}>
+                      {g.name}: {g.quantity} шт — {formatNum(g.total)} ₽
+                    </Text>
+                  ))}
+                </View>
+              )}
+
               <View style={styles.salaryRow}>
                 <Text style={styles.salaryLabel}>Взято деньгами:</Text>
                 <Text style={[styles.salaryValue, { color: COLORS.red }]}>-{formatNum(data.cashExpenses)} ₽</Text>
               </View>
+
+              {/* Уборщица */}
+              {data.shifts.reduce((sum, s) => sum + (s.cleanerAmount || 0), 0) > 0 && (
+                <View style={styles.salaryRow}>
+                  <Text style={styles.salaryLabel}>Уборщица:</Text>
+                  <Text style={[styles.salaryValue, { color: COLORS.green }]}>
+                    +{formatNum(data.shifts.reduce((sum, s) => sum + (s.cleanerAmount || 0), 0))} ₽
+                  </Text>
+                </View>
+              )}
+
               {data.fines.length > 0 && (
                 <View style={styles.salaryRow}>
                   <Text style={styles.salaryLabel}>Штрафы ({data.fines.length}):</Text>
@@ -296,30 +326,63 @@ export default function SalaryScreen() {
             </View>
           ))}
 
-          {/* Кнопка выплаты */}
-          <TouchableOpacity
-            style={[styles.payBtn, paying && { opacity: 0.5 }]}
-            onPress={handlePaySalary}
-            disabled={paying}
-          >
-            <Text style={styles.payBtnText}>
-              {paying ? '⏳ Выплата...' : '💸 Выплатить зарплату'}
-            </Text>
+          {/* Сводка по товарам */}
+          {(() => {
+            const allGoods: Record<string, { quantity: number; total: number }> = {};
+            Object.values(salaryData).forEach(data => {
+              if (data.goodsDetails) {
+                data.goodsDetails.forEach(g => {
+                  if (!allGoods[g.name]) allGoods[g.name] = { quantity: 0, total: 0 };
+                  allGoods[g.name].quantity += g.quantity || 0;
+                  allGoods[g.name].total += g.total || 0;
+                });
+              }
+            });
+            const goodsNames = Object.keys(allGoods);
+            if (goodsNames.length === 0) return null;
+            return (
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryTitle}>Сводка по товарам</Text>
+                {goodsNames.map(name => (
+                  <View key={name} style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>{name}</Text>
+                    <Text style={styles.summaryValue}>{allGoods[name].quantity} шт — {formatNum(allGoods[name].total)} ₽</Text>
+                  </View>
+                ))}
+              </View>
+            );
+          })()}
+
+          {/* Сводка по уборщице */}
+          {(() => {
+            let totalCleaner = 0;
+            Object.values(salaryData).forEach(data => {
+              data.shifts.forEach(s => {
+                totalCleaner += s.cleanerAmount || 0;
+              });
+            });
+            if (totalCleaner === 0) return null;
+            return (
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryTitle}>Уборщица</Text>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Выплачено уборщице:</Text>
+                  <Text style={[styles.summaryValue, { color: COLORS.red }]}>
+                    {formatNum(totalCleaner)} ₽
+                  </Text>
+                </View>
+              </View>
+            );
+          })()}
+
+          <TouchableOpacity style={[styles.payBtn, paying && { opacity: 0.5 }]} onPress={handlePaySalary} disabled={paying}>
+            <Text style={styles.payBtnText}>{paying ? '⏳ Выплата...' : '💸 Выплатить зарплату'}</Text>
           </TouchableOpacity>
 
-          {/* Общий итог */}
           <View style={styles.summaryCard}>
             <Text style={styles.summaryTitle}>Общий итог</Text>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Сотрудников:</Text>
-              <Text style={styles.summaryValue}>{Object.keys(salaryData).length}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>К выплате всего:</Text>
-              <Text style={[styles.summaryValue, { color: COLORS.green }]}>
-                {formatNum(Object.values(salaryData).reduce((s, d) => s + d.total, 0))} ₽
-              </Text>
-            </View>
+            <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Сотрудников:</Text><Text style={styles.summaryValue}>{Object.keys(salaryData).length}</Text></View>
+            <View style={styles.summaryRow}><Text style={styles.summaryLabel}>К выплате всего:</Text><Text style={[styles.summaryValue, { color: COLORS.green }]}>{formatNum(Object.values(salaryData).reduce((s, d) => s + d.total, 0))} ₽</Text></View>
           </View>
         </>
       )}
@@ -351,6 +414,8 @@ const styles = StyleSheet.create({
   salaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
   salaryLabel: { color: COLORS.textDim, fontSize: 14, flex: 1 },
   salaryValue: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
+  goodsDetailsBlock: { paddingLeft: 16, marginBottom: 8 },
+  goodsDetailText: { color: COLORS.textDim, fontSize: 12, marginBottom: 2 },
   totalDivider: { height: 2, backgroundColor: COLORS.green, marginVertical: 8 },
   salaryTotalLabel: { color: COLORS.text, fontSize: 16, fontWeight: '700', flex: 1 },
   salaryTotalValue: { fontSize: 22, fontWeight: '700' },
@@ -365,5 +430,4 @@ const styles = StyleSheet.create({
   lockedIcon: { fontSize: 60, marginBottom: 20 },
   lockedTitle: { color: COLORS.text, fontSize: 22, fontWeight: '700', marginBottom: 10 },
   lockedText: { color: COLORS.textDim, fontSize: 14, textAlign: 'center' },
-  lockedSubText: { color: COLORS.textDim, fontSize: 12, marginTop: 8 },
 });

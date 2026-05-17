@@ -75,21 +75,31 @@ export default function HistoryScreen() {
               Факт: {formatNum(item.factTotal)} ₽ (Нал: {formatNum(item.factCash)}, Карта: {formatNum(item.factCashless)})
             </Text>
             <Text style={styles.detailText}>2%: {formatNum(item.twoPercent)} ₽</Text>
+            {item.cleanerAmount && formatNum(item.cleanerAmount).length > 0 && (
+              <View style={styles.expensesBlock}>
+                <Text style={styles.detailText}>Уборщица: {formatNum(item.cleanerAmount)} ₽</Text>
+              </View>
+            )}
 
             {item.goodsTaken && item.goodsTaken.length > 0 && (
               <View style={styles.expensesBlock}>
                 <Text style={styles.detailText}>Взято товарами:</Text>
                 {item.goodsTaken.map((g, i) => (
                   <Text key={i} style={styles.expenseDetail}>
-                    {g.name} ×{g.quantity} = {formatNum(g.quantity * g.price)} ₽
+                    {g.workerName ? `${g.workerName}: ` : ''}{g.name} ×{g.quantity} = {formatNum(g.quantity * g.price)} ₽
                   </Text>
                 ))}
               </View>
             )}
 
-            {item.cashTaken != null && item.cashTaken > 0 && (
+            {item.cashTakenItems && item.cashTakenItems.length > 0 && (
               <View style={styles.expensesBlock}>
-                <Text style={styles.detailText}>Взято деньгами: {formatNum(item.cashTaken)} ₽</Text>
+                <Text style={styles.detailText}>Взято деньгами:</Text>
+                {item.cashTakenItems.map((c, i) => (
+                  <Text key={i} style={styles.expenseDetail}>
+                    {c.workerName ? `${c.workerName}: ` : ''}{formatNum(c.amount)} ₽
+                  </Text>
+                ))}
               </View>
             )}
 
