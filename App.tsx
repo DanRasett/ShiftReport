@@ -51,12 +51,7 @@ const AppDrawer = () => {
         drawerLabelStyle: { fontSize: 15 },
         headerRight: () => (
           <TouchableOpacity
-            onPress={() =>
-              Alert.alert('Выход из SmartShell', 'Вы уверены?', [
-                { text: 'Отмена', style: 'cancel' },
-                { text: 'Выйти', style: 'destructive', onPress: () => logout() },
-              ])
-            }
+            onPress={() => logout()}
             style={styles.logoutBtn}
           >
             <Text style={styles.logoutText}>Выйти</Text>
