@@ -30,8 +30,9 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
-      "output": "single"
-    },
+      "output": "single",
+      "static": "web"
+    }
     "plugins": [
       "expo-sharing"
     ],
