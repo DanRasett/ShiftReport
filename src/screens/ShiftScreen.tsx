@@ -72,7 +72,8 @@ export default function ShiftScreen() {
   const [currentPickerTarget, setCurrentPickerTarget] = useState<'worker' | 'goodsWorker' | 'cashWorker' | null>(null);
   const userRoles = useRef<string[]>([]);
 
-  const calc = calculateShift(form, parseInt(cleanerAmount) || 0);
+  const cashTakenTotal = cashTaken.reduce((sum, c) => sum + (parseInt(c.amount) || 0), 0);
+  const calc = calculateShift(form, parseInt(cleanerAmount) || 0, cashTakenTotal);
   const isManager = () => userRoles.current.some(r => r.toLowerCase().includes('manager') || r.toLowerCase().includes('owner') || r.toLowerCase().includes('admin'));
   const showAllBlocks = !isManager() || isActiveOperator;
 
