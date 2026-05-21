@@ -99,6 +99,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       password: tempPassword,
     });
 
+    
+
     if (success) {
       await saveCredentials(tempLogin.trim(), tempPassword);
       const roles = await getUserRole();
