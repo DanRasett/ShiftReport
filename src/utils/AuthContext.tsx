@@ -21,6 +21,7 @@ const COLORS = {
   textDim: '#8b8d94',
   green: '#4caf93',
   inputBg: '#282c34',
+  red: '#e0556a',
 };
 
 interface AuthContextType {
@@ -42,10 +43,10 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
-  const [loginStep, setLoginStep] = useState<'login' | 'password'>('login');
   const [tempLogin, setTempLogin] = useState('');
   const [tempPassword, setTempPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
   const [userRoles, setUserRoles] = useState<string[]>([]);
 
   useEffect(() => {
@@ -80,36 +81,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const handleLoginStep = async () => {
-    if (loginStep === 'login' && tempLogin.trim()) {
-      setLoginStep('password');
-    } else if (loginStep === 'password' && tempPassword.trim()) {
-      setLoginLoading(true);
-      const success = await loginToSmartShell({
-        login: tempLogin.trim(),
-        password: tempPassword,
-      });
-      if (success) {
-        await saveCredentials(tempLogin.trim(), tempPassword);
-        const roles = await getUserRole();
-        setUserRoles(roles);
-        setIsLoggedIn(true);
-        setShowLogin(false);
-        setTempLogin('');
-        setTempPassword('');
-        setLoginStep('login');
-        syncWorkersFromShell();
-      } else {
-        Alert.alert('Ошибка', 'Неверный логин или пароль');
-      }
-      setLoginLoading(false);
+  const handleLogin = async () => {
+    if (!tempLogin.trim()) {
+      setLoginError('Введите логин');
+      return;
     }
+    if (!tempPassword.trim()) {
+      setLoginError('Введите пароль');
+      return;
+    }
+
+    setLoginLoading(true);
+    setLoginError('');
+
+    const success = await loginToSmartShell({
+      login: tempLogin.trim(),
+      password: tempPassword,
+    });
+
+    if (success) {
+      await saveCredentials(tempLogin.trim(), tempPassword);
+      const roles = await getUserRole();
+      setUserRoles(roles);
+      setIsLoggedIn(true);
+      setShowLogin(false);
+      setTempLogin('');
+      setTempPassword('');
+      setLoginError('');
+      syncWorkersFromShell();
+    } else {
+      setLoginError('Неверный логин или пароль');
+    }
+
+    setLoginLoading(false);
   };
 
   const showLoginModal = () => {
     setTempLogin('');
     setTempPassword('');
-    setLoginStep('login');
+    setLoginError('');
     setShowLogin(true);
   };
 
@@ -137,43 +147,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Вход в SmartShell</Text>
             <Text style={styles.modalSubtitle}>Введите данные для входа в систему</Text>
-            <Text style={styles.modalLabel}>
-              {loginStep === 'login' ? 'Логин (номер телефона):' : 'Пароль:'}
-            </Text>
+
+            <Text style={styles.modalLabel}>Логин (номер телефона):</Text>
             <TextInput
               style={styles.modalInput}
-              value={loginStep === 'login' ? tempLogin : tempPassword}
-              onChangeText={(v) => {
-                if (loginStep === 'login') setTempLogin(v);
-                else setTempPassword(v);
-              }}
-              keyboardType={loginStep === 'login' ? 'phone-pad' : 'default'}
-              secureTextEntry={loginStep === 'password'}
+              value={tempLogin}
+              onChangeText={(v) => { setTempLogin(v); setLoginError(''); }}
+              keyboardType="phone-pad"
               autoFocus
-              placeholder={loginStep === 'login' ? '+7 (999) 123-45-67' : '••••••••'}
+              placeholder="+7 (999) 123-45-67"
+              placeholderTextColor={COLORS.textDim}
+              returnKeyType="next"
+            />
+
+            <Text style={styles.modalLabel}>Пароль:</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={tempPassword}
+              onChangeText={(v) => { setTempPassword(v); setLoginError(''); }}
+              secureTextEntry
+              placeholder="••••••••"
               placeholderTextColor={COLORS.textDim}
               returnKeyType="go"
-              onSubmitEditing={handleLoginStep}
+              onSubmitEditing={handleLogin}
             />
-            <View style={styles.modalButtons}>
-              {loginStep === 'password' && (
-                <TouchableOpacity
-                  style={styles.modalBackBtn}
-                  onPress={() => setLoginStep('login')}
-                >
-                  <Text style={styles.modalBackText}>Назад</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                style={[styles.modalOkBtn, loginLoading && { opacity: 0.6 }]}
-                onPress={handleLoginStep}
-                disabled={loginLoading}
-              >
-                <Text style={styles.modalOkText}>
-                  {loginLoading ? 'Вход...' : loginStep === 'login' ? 'Далее' : 'Войти'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+
+            {loginError ? (
+              <Text style={styles.errorText}>{loginError}</Text>
+            ) : null}
+
+            <TouchableOpacity
+              style={[styles.modalOkBtn, loginLoading && { opacity: 0.6 }]}
+              onPress={handleLogin}
+              disabled={loginLoading}
+            >
+              <Text style={styles.modalOkText}>
+                {loginLoading ? 'Вход...' : 'Войти'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -223,28 +234,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  modalBackBtn: {
-    padding: 14,
-    borderRadius: 10,
-    backgroundColor: COLORS.inputBg,
-    alignItems: 'center',
-    flex: 1,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  modalBackText: {
-    color: COLORS.textDim,
-    fontSize: 16,
-    fontWeight: '600',
+  errorText: {
+    color: COLORS.red,
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 12,
   },
   modalOkBtn: {
-    flex: 2,
     padding: 14,
     borderRadius: 10,
     backgroundColor: COLORS.green,
