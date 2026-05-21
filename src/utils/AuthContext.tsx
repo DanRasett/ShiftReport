@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   Modal,
   KeyboardAvoidingView,
   Platform,
@@ -39,6 +38,17 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const useAuth = () => useContext(AuthContext);
+
+const normalizePhone = (phone: string): string => {
+  let cleaned = phone.replace(/\D/g, '');
+  if (cleaned.startsWith('8')) {
+    cleaned = '7' + cleaned.substring(1);
+  }
+  if (cleaned.length === 10) {
+    cleaned = '7' + cleaned;
+  }
+  return cleaned;
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -94,15 +104,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoginLoading(true);
     setLoginError('');
 
+    const normalizedLogin = normalizePhone(tempLogin.trim());
+
     const success = await loginToSmartShell({
-      login: tempLogin.trim(),
+      login: normalizedLogin,
       password: tempPassword,
     });
 
-    
-
     if (success) {
-      await saveCredentials(tempLogin.trim(), tempPassword);
+      await saveCredentials(normalizedLogin, tempPassword);
       const roles = await getUserRole();
       setUserRoles(roles);
       setIsLoggedIn(true);
