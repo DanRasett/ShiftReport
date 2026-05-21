@@ -11,22 +11,26 @@ export const calculateShift = (
   const factCashless = parseFloat(form.factCashless) || 0;
 
   const dashTotal = dashCash + dashCashless;
-  // К факту прибавляем и уборщицу, и деньги, взятые под ЗП
   const factTotal = factCash + factCashless + cleanerAmount + cashTakenTotal;
 
   const percent = dashTotal > 10000 ? 0.03 : 0.02;
   const twoPercent = Math.ceil(factTotal * percent);
 
-  const expensesTotal = 0;
+  // Недосдача/пересдача
+  const cashDiff = factCash + cashTakenTotal - dashCash;
+  const cashlessOver = Math.max(0, factCashless - dashCashless); // пересдача по карте
+  let difference = cashDiff + Math.min(factCashless - dashCashless, 0) + cleanerAmount;
 
-  // Разница: факт (с учётом взятых под ЗП) минус дэш + уборщица
-  const difference = (factCash + cashTakenTotal - dashCash) + Math.min(factCashless - dashCashless, 0) + cleanerAmount;
+  // Пересдача по карте компенсирует недосдачу по налу
+  if (difference < 0 && cashlessOver > 0) {
+    difference = Math.min(0, difference + cashlessOver);
+  }
 
   return {
     dashTotal,
     factTotal,
     twoPercent,
-    expensesTotal,
+    expensesTotal: 0,
     difference,
   };
 };
