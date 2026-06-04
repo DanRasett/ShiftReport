@@ -83,7 +83,7 @@ export default function ShiftScreen() {
   useEffect(() => { if (isLoggedIn && isShellLoggedIn()) { fetchAllData(); setAutoRefresh(true); } }, [isLoggedIn]);
   useEffect(() => {
     if (!autoRefresh || !isShellLoggedIn()) return;
-    const i = setInterval(async () => { try { const d = await getShiftData(); if (d) setForm(p => ({ ...p, dashCash: String(d.cash), dashCashless: String(d.cashless) })); } catch (e) {} }, 5000);
+    const i = setInterval(async () => { try { const d = await getShiftData(); if (d) setForm(p => ({ ...p, dashCash: String(d.cash), dashCashless: String(d.cashless) })); } catch (e) {} }, 15000);
     return () => clearInterval(i);
   }, [autoRefresh]);
 
@@ -109,8 +109,8 @@ export default function ShiftScreen() {
       setWorkers(w.map((x: any) => ({ id: String(x.id), name: [x.first_name, x.last_name].filter(Boolean).join(' ') || x.nickname || String(x.id) })));
       userRoles.current = roles; setIsActiveOperator(roles.some(r => r.toLowerCase().includes('active_operator')));
       const ao = w.find((x: any) => x.role && x.role.toLowerCase().includes('active_operator'));
-      if (ao) { const fn = [ao.first_name, ao.last_name].filter(Boolean).join(' '); if (fn) { setWorkerName(fn); getUnpaidFines(fn).then(setUnpaidFines); } }
-      else { const cw = await getCurrentWorker(); if (cw) { setWorkerName(cw); getUnpaidFines(cw).then(setUnpaidFines); } }
+      if (ao) { const fn = [ao.first_name, ao.last_name].filter(Boolean).join(' '); if (fn) { setWorkerName(fn); } }
+      else { const cw = await getCurrentWorker(); if (cw) { setWorkerName(cw); } }
       setGoodsList(goods);
     } catch (e) {}
   };

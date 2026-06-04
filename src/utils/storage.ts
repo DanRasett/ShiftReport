@@ -69,7 +69,7 @@ const mapRowToReport = (row: any): SavedReport => ({
 
 export const getUnpaidReports = async (): Promise<SavedReport[]> => {
   try {
-    const data = await supabase.select('reports', 'select=*&salary_paid=eq.false&order=created_at.desc&limit=500');
+    const data = await supabase.select('reports', 'select=*&salary_paid=eq.false&order=created_at.desc&limit=50');
     if (data) return data.map(mapRowToReport);
   } catch (e: any) {}
   return [];

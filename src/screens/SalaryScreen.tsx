@@ -184,8 +184,14 @@ export default function SalaryScreen() {
         const totalFines = d.fines.reduce((s, f) => s + f.amount, 0);
         d.total = d.base + d.percent + d.totalDiff - d.goodsExpenses - d.cashExpenses - totalFines;
       });
-
-      setSalaryData(result);
+      // Удаляем сотрудников с 0 смен
+      const filteredResult: Record<string, WorkerData> = {};
+      Object.entries(result).forEach(([worker, data]) => {
+        if (data.shifts.length > 0) {
+          filteredResult[worker] = data;
+        }
+      });
+      setSalaryData(filteredResult);
     } catch (e: any) {
       Alert.alert('Ошибка', 'Не удалось рассчитать: ' + e.message);
     }
