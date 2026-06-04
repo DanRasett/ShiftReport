@@ -91,13 +91,14 @@ export const getWorkersWithSettings = async (): Promise<any[]> => {
 };
 
 export const updateWorkerSettings = async (
-  workerId: string, baseSalary: number, calculatePercent: boolean
+  workerId: string, baseSalary: number, calculatePercent: boolean, includeInSalary: boolean
 ): Promise<void> => {
-  try {
-    await supabase.update('workers', `id=eq.${workerId}`, {
-      base_salary: baseSalary, calculate_percent: calculatePercent, updated_at: new Date().toISOString(),
-    });
-  } catch {}
+  await supabase.update('workers', `id=eq.${workerId}`, {
+    base_salary: baseSalary,
+    calculate_percent: calculatePercent,
+    include_in_salary: includeInSalary,
+    updated_at: new Date().toISOString(),
+  });
 };
 
 export const syncWorkersToSupabase = async (workers: any[]): Promise<void> => {

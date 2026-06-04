@@ -10,8 +10,6 @@ const COLORS = {
   textDim: '#8b8d94', green: '#4caf93', inputBg: '#282c34',
 };
 
-const formatNum = (n: number) => n.toLocaleString('ru-RU');
-
 export default function WorkersSettingsScreen() {
   const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,9 +33,18 @@ export default function WorkersSettingsScreen() {
     setWorkers(prev => prev.map(w => w.id === parseInt(id) ? { ...w, calculate_percent: !w.calculate_percent } : w));
   };
 
+  const toggleIncludeInSalary = (id: string) => {
+    setWorkers(prev => prev.map(w => w.id === parseInt(id) ? { ...w, include_in_salary: w.include_in_salary === false ? true : false } : w));
+  };
+
   const saveWorker = async (worker: any) => {
     const baseSalary = parseFloat(worker.base_salary) || 1400;
-    await updateWorkerSettings(String(worker.id), baseSalary, worker.calculate_percent !== false);
+    await updateWorkerSettings(
+      String(worker.id),
+      baseSalary,
+      worker.calculate_percent !== false,
+      worker.include_in_salary !== false
+    );
     Alert.alert('Сохранено', `Настройки для ${worker.first_name} ${worker.last_name} обновлены`);
   };
 
@@ -76,6 +83,16 @@ export default function WorkersSettingsScreen() {
               onValueChange={() => togglePercent(String(worker.id))}
               trackColor={{ false: COLORS.border, true: COLORS.green }}
               thumbColor={worker.calculate_percent !== false ? '#fff' : '#888'}
+            />
+          </View>
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Учитывать в зарплате:</Text>
+            <Switch
+              value={worker.include_in_salary !== false}
+              onValueChange={() => toggleIncludeInSalary(String(worker.id))}
+              trackColor={{ false: COLORS.border, true: COLORS.green }}
+              thumbColor={worker.include_in_salary !== false ? '#fff' : '#888'}
             />
           </View>
 

@@ -60,13 +60,14 @@ export default function SalaryScreen() {
       const allUnpaidFines = await getAllUnpaidFines();
       const workersSettings = await getWorkersWithSettings();
 
-      const workerSettingsMap: Record<string, { baseSalary: number; calculatePercent: boolean }> = {};
+      const workerSettingsMap: Record<string, { baseSalary: number; calculatePercent: boolean; includeInSalary: boolean }> = {};
       workersSettings.forEach((w: any) => {
         const fullName = [w.first_name, w.last_name].filter(Boolean).join(' ');
         if (fullName) {
           workerSettingsMap[fullName] = {
             baseSalary: Number(w.base_salary) || 1400,
             calculatePercent: w.calculate_percent !== false,
+            includeInSalary: w.include_in_salary !== false,
           };
         }
       });
@@ -85,6 +86,8 @@ export default function SalaryScreen() {
       const byWorker: Record<string, SavedReport[]> = {};
       filtered.forEach(r => {
         const w = r.workerName || 'Неизвестный';
+        const settings = workerSettingsMap[w];
+        if (settings && !settings.includeInSalary) return;
         if (!byWorker[w]) byWorker[w] = [];
         byWorker[w].push(r);
       });
