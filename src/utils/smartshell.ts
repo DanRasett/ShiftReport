@@ -397,27 +397,44 @@ export const getDetailedWorkers = async (): Promise<WorkerInfo[]> => {
 export const getGoodsLogs = async (): Promise<{ goodName: string; quantity: number; type: string }[]> => {
   if (!shellInstance || !isLoggedIn) return [];
   try {
-    const query = `
+    // Сначала узнаём структуру WorkShiftEvent
+    const typeQuery = `
       query {
-        activeWorkShift {
-          events {
-            type
-            good {
-              title
+        __type(name: "WorkShiftEvent") {
+          fields {
+            name
+            type {
+              name
+              kind
             }
-            quantity
           }
         }
       }
     `;
-    const data = await shellInstance.call(query);
-    const events = data?.activeWorkShift?.events || [];
-    return events.map((e: any) => ({
-      goodName: e.good?.title || 'Неизвестный товар',
-      quantity: Math.abs(e.quantity || 0),
-      type: e.type || 'unknown',
-    }));
-  } catch {
+    const typeData = await shellInstance.call(typeQuery);
+    console.log('Поля WorkShiftEvent:');
+    (typeData?.__type?.fields || []).forEach((f: any) => {
+      console.log(`  - ${f.name}: ${f.type?.name || f.type?.kind}`);
+    });
+
+    // Пробуем получить события
+    const eventsQuery = `
+      query {
+        activeWorkShift {
+          events {
+            id
+            type
+            created_at
+          }
+        }
+      }
+    `;
+    const data = await shellInstance.call(eventsQuery);
+    console.log('События:', JSON.stringify(data?.activeWorkShift?.events?.slice(0, 3)));
+
+    return [];
+  } catch (e: any) {
+    console.log('Ошибка:', e.message);
     return [];
   }
 };
