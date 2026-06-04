@@ -392,3 +392,32 @@ export const getDetailedWorkers = async (): Promise<WorkerInfo[]> => {
     return [];
   }
 };
+
+// Получить список списанных товаров (продажи + взято под ЗП)
+export const getGoodsLogs = async (): Promise<{ goodName: string; quantity: number; type: string }[]> => {
+  if (!shellInstance || !isLoggedIn) return [];
+  try {
+    const query = `
+      query {
+        activeWorkShift {
+          events {
+            type
+            good {
+              title
+            }
+            quantity
+          }
+        }
+      }
+    `;
+    const data = await shellInstance.call(query);
+    const events = data?.activeWorkShift?.events || [];
+    return events.map((e: any) => ({
+      goodName: e.good?.title || 'Неизвестный товар',
+      quantity: Math.abs(e.quantity || 0),
+      type: e.type || 'unknown',
+    }));
+  } catch {
+    return [];
+  }
+};
