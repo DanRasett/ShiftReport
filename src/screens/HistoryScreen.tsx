@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react
 import { useFocusEffect } from '@react-navigation/native';
 import { SavedReport } from '../types';
 import { getHistory } from '../utils/storage';
+import { exportReportToText } from '../utils/export';
 
 const COLORS = {
   bg: '#1a1d23',
@@ -119,13 +120,9 @@ export default function HistoryScreen() {
                 </Text>
               </View>
             )}
-
-            {item.photoBase64 && (
-              <View style={styles.photoBlock}>
-                <Text style={styles.detailText}>📷 Чек:</Text>
-                <Image source={{ uri: `data:image/jpeg;base64,${item.photoBase64}` }} style={styles.reportPhoto} />
-              </View>
-            )}
+            <TouchableOpacity style={styles.exportBtn} onPress={() => exportReportToText(item)}>
+              <Text style={styles.exportBtnText}>📥 Скачать отчёт</Text>
+            </TouchableOpacity>
           </View>
         )}
       </TouchableOpacity>
@@ -187,4 +184,18 @@ const styles = StyleSheet.create({
   reportPhoto: { width: '100%', height: 180, borderRadius: 8, marginTop: 6, resizeMode: 'cover' },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { color: COLORS.textDim, fontSize: 16 },
+  exportBtn: {
+  backgroundColor: COLORS.card,
+  borderWidth: 1,
+  borderColor: COLORS.green,
+  borderRadius: 14,
+  padding: 16,
+  alignItems: 'center',
+  marginBottom: 16,
+},
+exportBtnText: {
+  color: COLORS.green,
+  fontSize: 16,
+  fontWeight: '700',
+},
 });

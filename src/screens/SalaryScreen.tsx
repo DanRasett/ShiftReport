@@ -8,6 +8,7 @@ import { SavedReport } from '../types';
 import { getUnpaidReports, markSalaryPaid, getAllUnpaidFines, getWorkersWithSettings } from '../utils/storage';
 import { getUserRole, loginToSmartShell } from '../utils/smartshell';
 import { getCredentials } from '../utils/storage';
+import { exportSalaryToExcel } from '../utils/export';
 
 const COLORS = {
   bg: '#1a1d23', card: '#21242b', border: '#2a2d35', text: '#e0e0e0',
@@ -379,6 +380,12 @@ export default function SalaryScreen() {
             <Text style={styles.payBtnText}>{paying ? '⏳ Выплата...' : '💸 Выплатить зарплату'}</Text>
           </TouchableOpacity>
 
+          {Object.keys(salaryData).length > 0 && (
+            <TouchableOpacity style={styles.exportBtn} onPress={() => exportSalaryToExcel(salaryData, fromDate, toDate)}>
+              <Text style={styles.exportBtnText}>📥 Скачать Excel</Text>
+            </TouchableOpacity>
+          )}
+
           <View style={styles.summaryCard}>
             <Text style={styles.summaryTitle}>Общий итог</Text>
             <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Сотрудников:</Text><Text style={styles.summaryValue}>{Object.keys(salaryData).length}</Text></View>
@@ -430,4 +437,18 @@ const styles = StyleSheet.create({
   lockedIcon: { fontSize: 60, marginBottom: 20 },
   lockedTitle: { color: COLORS.text, fontSize: 22, fontWeight: '700', marginBottom: 10 },
   lockedText: { color: COLORS.textDim, fontSize: 14, textAlign: 'center' },
+  exportBtn: {
+  backgroundColor: COLORS.card,
+  borderWidth: 1,
+  borderColor: COLORS.green,
+  borderRadius: 14,
+  padding: 16,
+  alignItems: 'center',
+  marginBottom: 16,
+},
+exportBtnText: {
+  color: COLORS.green,
+  fontSize: 16,
+  fontWeight: '700',
+},
 });

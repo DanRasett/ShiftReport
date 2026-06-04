@@ -16,6 +16,7 @@ export interface SavedReport {
   cleanerAmount?: number;
   fine?: FineInfo;
   salaryPaid?: boolean;
+  shortageAmount?: number;
 }
 export interface GoodItem { id: string; name: string; shellQuantity: number; factQuantity: string; }
 export interface GoodDifference { name: string; difference: number; }
