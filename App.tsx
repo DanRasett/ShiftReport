@@ -9,6 +9,7 @@ import SalaryScreen from './src/screens/SalaryScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import WorkersSettingsScreen from './src/screens/WorkersSettingsScreen';
 import { AuthProvider, useAuth } from './src/utils/AuthContext';
+import DashboardScreen from './src/screens/DashboardScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -59,6 +60,7 @@ const AppDrawer = () => {
         ),
       }}
     >
+      <Drawer.Screen name="Дашборд" component={DashboardScreen} options={{ title: '📊 Дашборд' }} />
       <Drawer.Screen name="Смена" component={ShiftScreen} options={{ title: '📝 Сдача смены' }} />
       <Drawer.Screen name="Товар" component={GoodsScreen} options={{ title: '📦 Инвентаризация' }} />
       {isManagerOrOwner && (
