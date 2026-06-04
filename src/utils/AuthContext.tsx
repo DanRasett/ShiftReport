@@ -100,6 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
 
+      // Сверяем: если товар есть в логах списания — он verified
       const unmatchedGoods: string[] = [];
       goodsTakenFromReports.forEach(g => {
         const found = goodsLogs.find(l => l.goodName === g.name);

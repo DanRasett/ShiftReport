@@ -394,47 +394,39 @@ export const getDetailedWorkers = async (): Promise<WorkerInfo[]> => {
 };
 
 // Получить список списанных товаров (продажи + взято под ЗП)
-export const getGoodsLogs = async (): Promise<{ goodName: string; quantity: number; type: string }[]> => {
+export const getGoodsLogs = async (): Promise<{ goodName: string; quantity: number; workerName: string; type: string }[]> => {
   if (!shellInstance || !isLoggedIn) return [];
   try {
-    // Сначала узнаём структуру WorkShiftEvent
-    const typeQuery = `
+    const query = `
       query {
-        __type(name: "WorkShiftEvent") {
-          fields {
-            name
-            type {
-              name
-              kind
+        eventList(first: 100) {
+          data {
+            type
+            worker {
+              first_name
+              last_name
+            }
+            warehouse_item {
+              title
+              value
             }
           }
         }
       }
     `;
-    const typeData = await shellInstance.call(typeQuery);
-    console.log('Поля WorkShiftEvent:');
-    (typeData?.__type?.fields || []).forEach((f: any) => {
-      console.log(`  - ${f.name}: ${f.type?.name || f.type?.kind}`);
-    });
-
-    // Пробуем получить события
-    const eventsQuery = `
-      query {
-        activeWorkShift {
-          events {
-            id
-            type
-            created_at
-          }
-        }
-      }
-    `;
-    const data = await shellInstance.call(eventsQuery);
-    console.log('События:', JSON.stringify(data?.activeWorkShift?.events?.slice(0, 3)));
-
-    return [];
+    const data = await shellInstance.call(query);
+    const events = data?.eventList?.data || [];
+    
+    return events
+      .filter((e: any) => e.type === 'WAREHOUSE_GOODS_DISPOSED' && e.warehouse_item)
+      .map((e: any) => ({
+        goodName: e.warehouse_item?.title || 'Неизвестный товар',
+        quantity: Math.abs(e.warehouse_item?.value || 0),
+        workerName: [e.worker?.first_name, e.worker?.last_name].filter(Boolean).join(' ') || 'Неизвестный',
+        type: 'WAREHOUSE_DISPOSED',
+      }));
   } catch (e: any) {
-    console.log('Ошибка:', e.message);
+    console.log('Ошибка получения логов:', e.message);
     return [];
   }
 };
