@@ -1,18 +1,15 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, Dimensions, ActivityIndicator,
+  View, Text, ScrollView, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { LineChart, PieChart } from 'react-native-chart-kit';
 import { getHistory } from '../utils/storage';
 import { SavedReport } from '../types';
-
-const screenWidth = Dimensions.get('window').width;
 
 const COLORS = {
   bg: '#1a1d23', card: '#21242b', border: '#2a2d35', text: '#e0e0e0',
   textDim: '#8b8d94', green: '#4caf93', red: '#e0556a', yellow: '#f0c040',
-  blue: '#4c8baf', purple: '#8b4caf', orange: '#af8b4c',
+  blue: '#4c8baf', orange: '#af8b4c',
 };
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
@@ -42,35 +39,26 @@ export default function DashboardScreen() {
     );
   }
 
-  // Последние 7 дней для графика
+  // Статистика за всё время
+  const totalCash = reports.reduce((s, r) => s + r.factCash, 0);
+  const totalCashless = reports.reduce((s, r) => s + r.factCashless, 0);
+  const totalCleaner = reports.reduce((s, r) => s + (r.cleanerAmount || 0), 0);
+  const totalRevenue = totalCash + totalCashless + totalCleaner;
+
+  // Последние 7 дней
   const last7Days = reports
     .filter(r => {
       const date = new Date(r.date);
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       return date >= weekAgo;
-    })
-    .reverse();
+    });
 
-  const chartLabels = last7Days.map(r => {
-    const d = new Date(r.date);
-    return `${d.getDate()}.${d.getMonth() + 1}`;
-  });
+  const weekRevenue = last7Days.reduce((s, r) => s + r.factTotal, 0);
+  const weekCash = last7Days.reduce((s, r) => s + r.factCash, 0);
+  const weekCashless = last7Days.reduce((s, r) => s + r.factCashless, 0);
 
-  const chartData = last7Days.map(r => r.factTotal);
-
-  // Статистика за всё время
-  const totalCash = reports.reduce((s, r) => s + r.factCash, 0);
-  const totalCashless = reports.reduce((s, r) => s + r.factCashless, 0);
-  const totalCleaner = reports.reduce((s, r) => s + (r.cleanerAmount || 0), 0);
-
-  const pieData = [
-    { name: 'Наличные', amount: totalCash, color: COLORS.green, legendFontColor: COLORS.textDim, legendFontSize: 12 },
-    { name: 'Безнал', amount: totalCashless, color: COLORS.blue, legendFontColor: COLORS.textDim, legendFontSize: 12 },
-    { name: 'Уборщица', amount: totalCleaner, color: COLORS.orange, legendFontColor: COLORS.textDim, legendFontSize: 12 },
-  ].filter(d => d.amount > 0);
-
-  // Топ товаров, взятых под ЗП
+  // Топ товаров
   const goodsMap: Record<string, number> = {};
   reports.forEach(r => {
     if (r.goodsTaken) {
@@ -83,7 +71,7 @@ export default function DashboardScreen() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
-  // Смены по сотрудникам
+  // Сотрудники
   const workerShifts: Record<string, number> = {};
   reports.forEach(r => {
     const w = r.workerName || 'Неизвестный';
@@ -94,60 +82,47 @@ export default function DashboardScreen() {
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Дашборд</Text>
 
-      {/* График выручки */}
+      {/* Общая статистика */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Выручка за 7 дней</Text>
-        {chartData.length > 0 ? (
-          <LineChart
-            data={{
-              labels: chartLabels,
-              datasets: [{ data: chartData.length ? chartData : [0] }],
-            }}
-            width={screenWidth - 64}
-            height={200}
-            yAxisLabel=""
-            chartConfig={{
-                backgroundColor: COLORS.card,
-                backgroundGradientFrom: COLORS.card,
-                backgroundGradientTo: COLORS.card,
-                decimalPlaces: 0,
-                color: (opacity) => `rgba(76, 175, 147, ${opacity ?? 1})`,
-                labelColor: () => COLORS.textDim,
-                propsForDots: { r: '4', strokeWidth: '2', stroke: COLORS.green },
-                }}
-            bezier
-            style={styles.chart}
-          />
-        ) : (
-          <Text style={styles.emptyText}>Нет данных за 7 дней</Text>
-        )}
+        <Text style={styles.cardTitle}>Общая выручка</Text>
+        <View style={styles.bigNumber}>
+          <Text style={styles.bigNumberText}>{formatNum(totalRevenue)} ₽</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Наличные:</Text>
+          <Text style={styles.value}>{formatNum(totalCash)} ₽</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Безнал:</Text>
+          <Text style={styles.value}>{formatNum(totalCashless)} ₽</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Уборщица:</Text>
+          <Text style={styles.value}>{formatNum(totalCleaner)} ₽</Text>
+        </View>
       </View>
 
-      {/* Круговая диаграмма */}
+      {/* За 7 дней */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Распределение (всего)</Text>
-        {pieData.length > 0 ? (
-          <PieChart
-            data={pieData.map(d => ({
-              name: d.name,
-              population: d.amount,
-              color: d.color,
-              legendFontColor: COLORS.textDim,
-              legendFontSize: 12,
-            }))}
-            width={screenWidth - 64}
-            height={180}
-            chartConfig={{}}
-            accessor="population"
-            backgroundColor="transparent"
-            paddingLeft="15"
-          />
-        ) : (
-          <Text style={styles.emptyText}>Нет данных</Text>
-        )}
+        <Text style={styles.cardTitle}>За последние 7 дней</Text>
+        <View style={styles.bigNumber}>
+          <Text style={[styles.bigNumberText, { color: COLORS.green }]}>{formatNum(weekRevenue)} ₽</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Смен:</Text>
+          <Text style={styles.value}>{last7Days.length}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Наличные:</Text>
+          <Text style={styles.value}>{formatNum(weekCash)} ₽</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Безнал:</Text>
+          <Text style={styles.value}>{formatNum(weekCashless)} ₽</Text>
+        </View>
       </View>
 
-      {/* Топ товаров под ЗП */}
+      {/* Топ товаров */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Топ товаров под ЗП</Text>
         {topGoods.length > 0 ? (
@@ -163,7 +138,7 @@ export default function DashboardScreen() {
         )}
       </View>
 
-      {/* Смены по сотрудникам */}
+      {/* Сотрудники */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Смены по сотрудникам</Text>
         {Object.entries(workerShifts).map(([name, count], i) => (
@@ -172,27 +147,6 @@ export default function DashboardScreen() {
             <Text style={styles.shiftCount}>{count} смен</Text>
           </View>
         ))}
-      </View>
-
-      {/* Общая статистика */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Общая статистика</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Всего смен:</Text>
-          <Text style={styles.value}>{reports.length}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Выручка нал:</Text>
-          <Text style={styles.value}>{formatNum(totalCash)} ₽</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Выручка безнал:</Text>
-          <Text style={styles.value}>{formatNum(totalCashless)} ₽</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Уборщица:</Text>
-          <Text style={styles.value}>{formatNum(totalCleaner)} ₽</Text>
-        </View>
       </View>
 
       <View style={{ height: 40 }} />
@@ -206,8 +160,8 @@ const styles = StyleSheet.create({
   title: { color: COLORS.text, fontSize: 24, fontWeight: '700', marginBottom: 16 },
   card: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border },
   cardTitle: { color: COLORS.text, fontSize: 16, fontWeight: '600', marginBottom: 12 },
-  chart: { borderRadius: 8, marginTop: 8 },
-  emptyText: { color: COLORS.textDim, fontSize: 14, textAlign: 'center', padding: 20 },
+  bigNumber: { alignItems: 'center', paddingVertical: 16 },
+  bigNumberText: { color: COLORS.text, fontSize: 36, fontWeight: '700' },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 },
   rank: { color: COLORS.green, fontSize: 14, fontWeight: '700', width: 30 },
   goodsName: { color: COLORS.text, fontSize: 14, flex: 1 },
@@ -216,4 +170,5 @@ const styles = StyleSheet.create({
   shiftCount: { color: COLORS.green, fontSize: 14, fontWeight: '600' },
   label: { color: COLORS.textDim, fontSize: 14 },
   value: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
+  emptyText: { color: COLORS.textDim, fontSize: 14, textAlign: 'center', padding: 20 },
 });
