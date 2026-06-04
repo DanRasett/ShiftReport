@@ -107,14 +107,14 @@ export default function DashboardScreen() {
             height={200}
             yAxisLabel=""
             chartConfig={{
-              backgroundColor: COLORS.card,
-              backgroundGradientFrom: COLORS.card,
-              backgroundGradientTo: COLORS.card,
-              decimalPlaces: 0,
-              color: (opacity = 1) => `rgba(76, 175, 147, ${opacity})`,
-              labelColor: () => COLORS.textDim,
-              propsForDots: { r: '4', strokeWidth: '2', stroke: COLORS.green },
-            }}
+                backgroundColor: COLORS.card,
+                backgroundGradientFrom: COLORS.card,
+                backgroundGradientTo: COLORS.card,
+                decimalPlaces: 0,
+                color: (opacity) => `rgba(76, 175, 147, ${opacity ?? 1})`,
+                labelColor: () => COLORS.textDim,
+                propsForDots: { r: '4', strokeWidth: '2', stroke: COLORS.green },
+                }}
             bezier
             style={styles.chart}
           />
