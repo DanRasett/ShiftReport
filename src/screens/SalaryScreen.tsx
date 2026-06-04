@@ -56,9 +56,11 @@ export default function SalaryScreen() {
       const from = `${fy}-${String(fm).padStart(2, '0')}-${String(fd).padStart(2, '0')}`;
       const to = `${ty}-${String(tm).padStart(2, '0')}-${String(td).padStart(2, '0')}`;
 
-      const allReports = await getUnpaidReports();
-      const allUnpaidFines = await getAllUnpaidFines();
-      const workersSettings = await getWorkersWithSettings();
+      const [allReports, allUnpaidFines, workersSettings] = await Promise.all([
+        getUnpaidReports(),
+        getAllUnpaidFines(),
+        getWorkersWithSettings(),
+      ]);
 
       const workerSettingsMap: Record<string, { baseSalary: number; calculatePercent: boolean; includeInSalary: boolean }> = {};
       workersSettings.forEach((w: any) => {
