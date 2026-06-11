@@ -31,7 +31,7 @@ const buildReportText = (
   goodsTaken: { workerName: string; goodsName: string; quantity: string; price: string }[],
   cashTaken: { workerName: string; amount: string }[],
   fineAmount: string, fineReason: string, isManager: boolean,
-  cleanerAmount: string,
+  cleanerAmount: string, transfers: string,
 ) => {
   const expensesText = form.expenses.filter(e => e.name.trim() || e.description.trim()).map(e => `${e.name}: ${e.description}`).join('\n');
   const goodsText = goodsTaken.filter(g => g.workerName.trim() && g.goodsName.trim()).map(g => `${g.workerName}: ${g.goodsName} ×${g.quantity || '0'} = ${formatNum((parseInt(g.quantity) || 0) * (parseInt(g.price) || 0))} ₽`).join('\n');
@@ -39,7 +39,7 @@ const buildReportText = (
   const diffText = calc.difference > 0 ? `Пересдача: +${formatNum(calc.difference)} ₽` : calc.difference < 0 ? `Недосдача: ${formatNum(calc.difference)} ₽` : `0 ₽ (сходится)`;
   const percentLabel = calc.dashTotal > 10000 ? '3%' : '2%';
 
-  let text = `Сдача смены\nСотрудник: ${workerName || '—'}\n---\nДэш: ${formatNum(calc.dashTotal)}\nНал: ${formatNum(parseFloat(form.dashCash) || 0)}\nКарта: ${formatNum(parseFloat(form.dashCashless) || 0)}\n---\nФакт: ${formatNum(calc.factTotal)}\nНал: ${formatNum(parseFloat(form.factCash) || 0)}\nКарта: ${formatNum(parseFloat(form.factCashless) || 0)}\nУборщица: ${cleanerAmount ? formatNum(parseInt(cleanerAmount)) : '0'} ₽\n---\nВзято товарами:\n${goodsText || '—'}\nВзято деньгами:\n${cashText || '—'}\n---\nРасходы (старые):\n${expensesText || '—'}`;
+  let text = `Сдача смены\nСотрудник: ${workerName || '—'}\n---\nДэш: ${formatNum(calc.dashTotal)}\nНал: ${formatNum(parseFloat(form.dashCash) || 0)}\nКарта: ${formatNum(parseFloat(form.dashCashless) || 0)}\n---\nФакт: ${formatNum(calc.factTotal)}\nНал: ${formatNum(parseFloat(form.factCash) || 0)}\nКарта: ${formatNum(parseFloat(form.factCashless) || 0)}\nПереводы: ${transfers ? formatNum(parseInt(transfers)) : '0'} ₽\nУборщица: ${cleanerAmount ? formatNum(parseInt(cleanerAmount)) : '0'} ₽\n---\nВзято товарами:\n${goodsText || '—'}\nВзято деньгами:\n${cashText || '—'}\n---\nРасходы (старые):\n${expensesText || '—'}`;
   if (isManager) text += `\n---\nШтраф: ${fineAmount ? formatNum(parseInt(fineAmount)) + ' ₽ — ' + (fineReason || 'Не указана') : 'Нет'}`;
   text += `\n---\n${percentLabel}: ${formatNum(calc.twoPercent)}\n---\n${diffText}`;
   return text;
@@ -49,7 +49,7 @@ export default function ShiftScreen() {
   const { isLoggedIn } = useAuth();
   const isFocused = useIsFocused();
 
-  const [form, setForm] = useState<ShiftForm>({ dashCash: '', dashCashless: '', factCash: '', factCashless: '', expenses: [{ id: '1', name: '', description: '' }] });
+  const [form, setForm] = useState<ShiftForm>({ dashCash: '', dashCashless: '', factCash: '', factCashless: '', transfers: '', expenses: [{ id: '1', name: '', description: '' }] });
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -166,7 +166,7 @@ export default function ShiftScreen() {
   const handleShare = async () => {
     if (!form.factCash && !form.factCashless) { Alert.alert('Ошибка', 'Заполните Факт'); return; }
     setSending(true); setAutoRefresh(false);
-    const text = buildReportText(form, calc, workerName, goodsTaken, cashTaken, fineAmount, fineReason, isManager(), cleanerAmount);
+    const text = buildReportText(form, calc, workerName, goodsTaken, cashTaken, fineAmount, fineReason, isManager(), cleanerAmount, form.transfers || '');
     const fe = form.expenses.filter(e => e.name.trim() || e.description.trim());
     const rid = Date.now() * 1000 + Math.floor(Math.random() * 1000);
     const report: SavedReport = {
@@ -178,14 +178,15 @@ export default function ShiftScreen() {
       goodsTaken: goodsTaken.filter(g => g.workerName.trim() && g.goodsName.trim()).map(g => ({ workerName: g.workerName, name: g.goodsName, quantity: parseInt(g.quantity) || 0, price: parseInt(g.price) || 0 })),
       cashTakenItems: cashTaken.filter(c => c.workerName.trim() && c.amount.trim()).map(c => ({ workerName: c.workerName, amount: parseInt(c.amount) || 0 })),
       cleanerAmount: parseInt(cleanerAmount) || 0,
+      transfers: parseInt(form.transfers) || 0,
       fine: isManager() && parseInt(fineAmount) > 0 ? { amount: parseInt(fineAmount), reason: fineReason || 'Не указана' } : undefined,
     };
     await saveDraft({}); await clearDraft();
-    setTimeout(() => { supabase.insert('reports', { id: rid, date: report.date, worker_name: report.workerName || '', dash_total: report.dashTotal, dash_cash: report.dashCash, dash_cashless: report.dashCashless, fact_total: report.factTotal, fact_cash: report.factCash, fact_cashless: report.factCashless, two_percent: report.twoPercent, difference: report.difference, expenses: report.expenses || [], goods_taken: report.goodsTaken || [], cash_taken_items: report.cashTakenItems || [], cleaner_amount: report.cleanerAmount || 0, fine: report.fine || null }); }, 100);
+    setTimeout(() => { supabase.insert('reports', { id: rid, date: report.date, worker_name: report.workerName || '', dash_total: report.dashTotal, dash_cash: report.dashCash, dash_cashless: report.dashCashless, fact_total: report.factTotal, fact_cash: report.factCash, fact_cashless: report.factCashless, two_percent: report.twoPercent, difference: report.difference, expenses: report.expenses || [], goods_taken: report.goodsTaken || [], cash_taken_items: report.cashTakenItems || [], cleaner_amount: report.cleanerAmount || 0, transfers: report.transfers || 0, fine: report.fine || null }); }, 100);
     setTimeout(async () => {
       try { if (photoUri) await Sharing.shareAsync(photoUri, { mimeType: 'image/jpeg', dialogTitle: text }); else { const { Share } = require('react-native'); await Share.share({ message: text }); } } catch (e: any) {}
     }, 300);
-    setForm({ dashCash: '', dashCashless: '', factCash: '', factCashless: '', expenses: [{ id: String(Date.now()), name: '', description: '' }] });
+    setForm({ dashCash: '', dashCashless: '', factCash: '', factCashless: '', transfers: '', expenses: [{ id: String(Date.now()), name: '', description: '' }] });
     setPhotoUri(null); setPhotoBase64(null); setGoodsTaken([{ workerName: '', goodsName: '', quantity: '', price: '' }]); setCashTaken([{ workerName: '', amount: '' }]);
     setCleanerAmount(''); setFineAmount(''); setFineReason(''); setSending(false);
     setTimeout(() => { setAutoRefresh(true); fetchAllData(); }, 2000);
@@ -209,7 +210,19 @@ export default function ShiftScreen() {
       )}
       {showAllBlocks && (
         <>
-          {settings?.showFact !== false && (<View style={styles.card}><Text style={styles.cardTitle}>Факт</Text><View style={styles.row}><View style={styles.field}><Text style={styles.label}>Нал</Text><TextInput style={styles.input} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textDim} value={form.factCash} onChangeText={v => setForm({ ...form, factCash: v })} /></View><View style={styles.field}><Text style={styles.label}>Карта</Text><TextInput style={styles.input} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textDim} value={form.factCashless} onChangeText={v => setForm({ ...form, factCashless: v })} /></View></View><Text style={styles.totalRow}>Итого: <Text style={styles.totalNum}>{formatNum(calc.factTotal)} ₽</Text></Text></View>)}
+          {settings?.showFact !== false && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Факт</Text>
+              <View style={styles.row}>
+                <View style={styles.field}><Text style={styles.label}>Нал</Text><TextInput style={styles.input} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textDim} value={form.factCash} onChangeText={v => setForm({ ...form, factCash: v })} /></View>
+                <View style={styles.field}><Text style={styles.label}>Карта</Text><TextInput style={styles.input} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textDim} value={form.factCashless} onChangeText={v => setForm({ ...form, factCashless: v })} /></View>
+              </View>
+              <View style={[styles.row, { marginTop: 12 }]}>
+                <View style={styles.field}><Text style={styles.label}>Переводы</Text><TextInput style={styles.input} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textDim} value={form.transfers || ''} onChangeText={v => setForm({ ...form, transfers: v })} /></View>
+              </View>
+              <Text style={styles.totalRow}>Итого: <Text style={styles.totalNum}>{formatNum(calc.factTotal)} ₽</Text></Text>
+            </View>
+          )}
 
           {settings?.showCleaner !== false && (
             <View style={styles.card}>

@@ -9,13 +9,13 @@ const COLORS = {
 export interface ShiftSettings {
   showWorker: boolean; showDash: boolean; showFact: boolean;
   showGoodsTaken: boolean; showCashTaken: boolean; showFine: boolean;
-  showOtherExpenses: boolean; showPhoto: boolean;
+  showOtherExpenses: boolean; showPhoto: boolean; showCleaner: boolean;
 }
 
 const defaultSettings: ShiftSettings = {
   showWorker: true, showDash: true, showFact: true,
   showGoodsTaken: true, showCashTaken: true, showFine: true,
-  showOtherExpenses: true, showPhoto: true,
+  showOtherExpenses: true, showPhoto: true, showCleaner: true,  
 };
 
 export const getSettings = async (): Promise<ShiftSettings> => {
@@ -26,7 +26,7 @@ export const getSettings = async (): Promise<ShiftSettings> => {
       return {
         showWorker: s.show_worker ?? true, showDash: s.show_dash ?? true, showFact: s.show_fact ?? true,
         showGoodsTaken: s.show_goods_taken ?? true, showCashTaken: s.show_cash_taken ?? true, showFine: s.show_fine ?? true,
-        showOtherExpenses: s.show_other_expenses ?? true, showPhoto: s.show_photo ?? true,
+        showOtherExpenses: s.show_other_expenses ?? true, showPhoto: s.show_photo ?? true, showCleaner: s.show_cleaner ?? true,
       };
     }
   } catch (e) {}

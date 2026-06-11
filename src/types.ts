@@ -1,12 +1,12 @@
 export interface ExpenseRow { id: string; name: string; description: string; }
-export interface ShiftForm { dashCash: string; dashCashless: string; factCash: string; factCashless: string; expenses: ExpenseRow[]; }
+export interface ShiftForm { dashCash: string; dashCashless: string; factCash: string; factCashless: string; transfers: string; expenses: ExpenseRow[]; }
 export interface GoodItemTaken { workerName: string; name: string; quantity: number; price: number; }
 export interface CashTakenItem { workerName: string; amount: number; }
 export interface FineInfo { amount: number; reason: string; }
 export interface SavedReport {
   id: string; date: string; workerName?: string;
   dashTotal: number; dashCash: number; dashCashless: number;
-  factTotal: number; factCash: number; factCashless: number;
+  factTotal: number; factCash: number; factCashless: number; transfers?: number;
   expenses: { name: string; description: string }[];
   twoPercent: number; difference: number;
   photoBase64?: string;
