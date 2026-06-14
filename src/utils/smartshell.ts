@@ -398,8 +398,8 @@ export const getGoodsLogs = async (): Promise<{ goodName: string; quantity: numb
   if (!shellInstance || !isLoggedIn) return [];
   try {
     const query = `
-      query {
-        eventList(first: 100) {
+      query EventList($input: EventsInput, $page: Int, $first: Int) {
+        eventList(input: $input, page: $page, first: $first) {
           data {
             type
             worker {
@@ -414,11 +414,20 @@ export const getGoodsLogs = async (): Promise<{ goodName: string; quantity: numb
         }
       }
     `;
-    const data = await shellInstance.call(query);
+    
+    const variables = {
+      input: {
+        type: 'WAREHOUSE_GOODS_DISPOSED', // Только списания со склада
+      },
+      first: 100,
+      page: 1,
+    };
+
+    const data = await shellInstance.call(query, undefined, variables);
     const events = data?.eventList?.data || [];
     
     return events
-      .filter((e: any) => e.type === 'WAREHOUSE_GOODS_DISPOSED' && e.warehouse_item)
+      .filter((e: any) => e.warehouse_item)
       .map((e: any) => ({
         goodName: e.warehouse_item?.title || 'Неизвестный товар',
         quantity: Math.abs(e.warehouse_item?.value || 0),
