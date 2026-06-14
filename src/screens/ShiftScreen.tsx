@@ -238,7 +238,7 @@ export default function ShiftScreen() {
                   <TouchableOpacity style={styles.pickerField} onPress={() => { setCurrentPickerTarget('goodsWorker'); setCurrentGoodsIndex(index); setShowWorkerPicker(true); }}><Text style={[styles.pickerText, !item.workerName && { color: COLORS.textDim }]}>{item.workerName || 'Кто'}</Text></TouchableOpacity>
                   <TouchableOpacity style={styles.pickerField} onPress={() => openGoodsPicker(index)}><Text style={[styles.pickerText, !item.goodsName && { color: COLORS.textDim }]}>{item.goodsName || 'Товар'}</Text></TouchableOpacity>
                   <View style={styles.expenseSmall}><TextInput style={styles.input} placeholder="Кол" keyboardType="numeric" value={item.quantity} onChangeText={v => updateGoodsTaken(index, 'quantity', v)} /></View>
-                  <View style={styles.expenseSmall}><Text style={styles.priceText}>{formatNum((parseInt(item.quantity) || 0) * (parseInt(item.price) || 0))} ₽</Text></View>
+                  <View style={styles.expenseSmall}><Text style={styles.priceText}>{formatNum((parseInt(item.quantity) || 1) * (parseInt(item.price) || 0))} ₽</Text></View>
                   <TouchableOpacity style={styles.removeBtn} onPress={() => removeGoodsTaken(index)}><Text style={styles.removeBtnText}>✕</Text></TouchableOpacity>
                 </View>
               ))}<TouchableOpacity style={styles.addBtn} onPress={addGoodsTaken}><Text style={styles.addBtnText}>+ Добавить</Text></TouchableOpacity></View>
