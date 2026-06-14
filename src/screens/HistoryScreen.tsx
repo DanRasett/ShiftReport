@@ -1,9 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Clipboard from 'expo-clipboard';
 import { SavedReport } from '../types';
 import { getHistory } from '../utils/storage';
-import { exportReportToText } from '../utils/export';
+import { exportHistoryToExcel, getReportText } from '../utils/export';
 
 const COLORS = {
   bg: '#1a1d23',
@@ -36,6 +37,24 @@ export default function HistoryScreen() {
     }, [])
   );
 
+  const copyReport = async (report: SavedReport) => {
+    const text = getReportText(report);
+    if (Platform.OS === 'web') {
+      await navigator.clipboard.writeText(text);
+    } else {
+      await Clipboard.setStringAsync(text);
+    }
+    Alert.alert('Скопировано', 'Текст отчёта скопирован в буфер обмена');
+  };
+
+  const handleExport = () => {
+    if (reports.length === 0) {
+      Alert.alert('Нет данных', 'Нет отчётов для экспорта');
+      return;
+    }
+    exportHistoryToExcel(reports);
+  };
+
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
   };
@@ -61,6 +80,10 @@ export default function HistoryScreen() {
           </View>
           <Text style={styles.reportFact}>{formatNum(item.factTotal)} ₽</Text>
           <Text style={[styles.reportDiff, { color: diffColor }]}>{diffText}</Text>
+          {/* Кнопка копирования */}
+          <TouchableOpacity style={styles.copyBtn} onPress={() => copyReport(item)}>
+            <Text style={styles.copyBtnText}>📋</Text>
+          </TouchableOpacity>
           <Text style={styles.arrow}>{isExpanded ? '▾' : '▸'}</Text>
         </View>
         {isExpanded && (
@@ -75,8 +98,9 @@ export default function HistoryScreen() {
             <Text style={styles.detailText}>
               Факт: {formatNum(item.factTotal)} ₽ (Нал: {formatNum(item.factCash)}, Карта: {formatNum(item.factCashless)})
             </Text>
+            {item.transfers ? <Text style={styles.detailText}>Переводы: {formatNum(item.transfers)} ₽</Text> : null}
             <Text style={styles.detailText}>2%: {formatNum(item.twoPercent)} ₽</Text>
-            {item.cleanerAmount && formatNum(item.cleanerAmount).length > 0 && (
+            {item.cleanerAmount != null && item.cleanerAmount > 0 && (
               <View style={styles.expensesBlock}>
                 <Text style={styles.detailText}>Уборщица: {formatNum(item.cleanerAmount)} ₽</Text>
               </View>
@@ -120,9 +144,12 @@ export default function HistoryScreen() {
                 </Text>
               </View>
             )}
-            <TouchableOpacity style={styles.exportBtn} onPress={() => exportReportToText(item)}>
-              <Text style={styles.exportBtnText}>📥 Скачать отчёт</Text>
-            </TouchableOpacity>
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity style={styles.exportBtn} onPress={() => copyReport(item)}>
+                <Text style={styles.exportBtnText}>📋 Копировать</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </TouchableOpacity>
@@ -131,6 +158,14 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Верхняя панель */}
+      <View style={styles.topBar}>
+        <Text style={styles.countText}>Всего: {reports.length} смен</Text>
+        <TouchableOpacity style={styles.topExportBtn} onPress={handleExport}>
+          <Text style={styles.topExportBtnText}>📥 Excel</Text>
+        </TouchableOpacity>
+      </View>
+
       {reports.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyText}>Нет сохранённых отчётов</Text>
@@ -149,53 +184,43 @@ export default function HistoryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
+  topBar: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 10, backgroundColor: COLORS.card,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  countText: { color: COLORS.textDim, fontSize: 13 },
+  topExportBtn: { backgroundColor: COLORS.green, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 14 },
+  topExportBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   reportCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.card, borderRadius: 12, padding: 14,
+    marginBottom: 8, borderWidth: 1, borderColor: COLORS.border,
   },
   reportHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   reportDate: { color: COLORS.textDim, fontSize: 12, width: 45 },
   workerCol: { flex: 1 },
   reportWorker: { color: COLORS.green, fontSize: 13, fontWeight: '600' },
   paidBadge: {
-    color: COLORS.yellow,
-    fontSize: 10,
-    fontWeight: '700',
-    backgroundColor: '#2a2a1a',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-    marginTop: 2,
+    color: COLORS.yellow, fontSize: 10, fontWeight: '700',
+    backgroundColor: '#2a2a1a', paddingHorizontal: 6, paddingVertical: 2,
+    borderRadius: 4, alignSelf: 'flex-start', marginTop: 2,
   },
   reportFact: { color: COLORS.text, fontSize: 13, fontWeight: '600' },
   reportDiff: { fontSize: 12, fontWeight: '600' },
+  copyBtn: { padding: 4 },
+  copyBtnText: { fontSize: 16 },
   arrow: { color: COLORS.textDim, fontSize: 16, width: 20, textAlign: 'center' },
   details: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: COLORS.border, gap: 4 },
   detailHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   detailText: { color: COLORS.textDim, fontSize: 13 },
   expensesBlock: { marginTop: 6 },
   expenseDetail: { color: COLORS.textDim, fontSize: 12, marginLeft: 12 },
-  photoBlock: { marginTop: 8 },
-  reportPhoto: { width: '100%', height: 180, borderRadius: 8, marginTop: 6, resizeMode: 'cover' },
+  actionButtons: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  exportBtn: {
+    flex: 1, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.green,
+    borderRadius: 10, padding: 10, alignItems: 'center',
+  },
+  exportBtnText: { color: COLORS.green, fontSize: 14, fontWeight: '600' },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { color: COLORS.textDim, fontSize: 16 },
-  exportBtn: {
-  backgroundColor: COLORS.card,
-  borderWidth: 1,
-  borderColor: COLORS.green,
-  borderRadius: 14,
-  padding: 16,
-  alignItems: 'center',
-  marginBottom: 16,
-},
-exportBtnText: {
-  color: COLORS.green,
-  fontSize: 16,
-  fontWeight: '700',
-},
 });
