@@ -10,6 +10,7 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import WorkersSettingsScreen from './src/screens/WorkersSettingsScreen';
 import { AuthProvider, useAuth } from './src/utils/AuthContext';
 import DashboardScreen from './src/screens/DashboardScreen';
+import EditReportScreen from './src/screens/EditReportScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -71,6 +72,7 @@ const AppDrawer = () => {
       )}
       <Drawer.Screen name="История" component={HistoryScreen} options={{ title: '📋 История отчётов' }} />
       <Drawer.Screen name="Настройки" component={SettingsScreen} options={{ title: '⚙️ Настройки' }} />
+      <Drawer.Screen name="EditReport" component={EditReportScreen} options={{ title: 'Редактирование отчёта', drawerItemStyle: { display: 'none' } }} />
     </Drawer.Navigator>
   );
 };

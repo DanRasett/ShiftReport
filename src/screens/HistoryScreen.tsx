@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import { SavedReport } from '../types';
 import { getHistory } from '../utils/storage';
 import { exportHistoryToExcel, getReportText } from '../utils/export';
+import { useAuth } from '../utils/AuthContext';
 
 const COLORS = {
   bg: '#1a1d23',
@@ -30,6 +31,18 @@ const formatDate = (iso: string) => {
 export default function HistoryScreen() {
   const [reports, setReports] = useState<SavedReport[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { userRoles } = useAuth();
+  const navigation = useNavigation<any>();
+
+  const isManager = userRoles.some(r =>
+    r.toLowerCase().includes('manager') || r.toLowerCase().includes('owner') || r.toLowerCase().includes('admin')
+  );
+
+  const canEdit = (report: SavedReport) => {
+    if (isManager) return true;
+    const daysSinceReport = (Date.now() - new Date(report.date).getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceReport < 2;
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -62,6 +75,7 @@ export default function HistoryScreen() {
   const renderReport = ({ item }: { item: SavedReport }) => {
     const isExpanded = expandedId === item.id;
     const isPaid = item.salaryPaid === true;
+    const editable = canEdit(item);
     const diffText =
       item.difference > 0
         ? `Пересдача: +${formatNum(item.difference)} ₽`
@@ -80,7 +94,6 @@ export default function HistoryScreen() {
           </View>
           <Text style={styles.reportFact}>{formatNum(item.factTotal)} ₽</Text>
           <Text style={[styles.reportDiff, { color: diffColor }]}>{diffText}</Text>
-          {/* Кнопка копирования */}
           <TouchableOpacity style={styles.copyBtn} onPress={() => copyReport(item)}>
             <Text style={styles.copyBtnText}>📋</Text>
           </TouchableOpacity>
@@ -149,6 +162,14 @@ export default function HistoryScreen() {
               <TouchableOpacity style={styles.exportBtn} onPress={() => copyReport(item)}>
                 <Text style={styles.exportBtnText}>📋 Копировать</Text>
               </TouchableOpacity>
+              {editable && (
+                <TouchableOpacity
+                  style={[styles.exportBtn, { borderColor: COLORS.yellow }]}
+                  onPress={() => navigation.navigate('EditReport', { reportId: item.id })}
+                >
+                  <Text style={[styles.exportBtnText, { color: COLORS.yellow }]}>✏️ Изменить</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         )}
@@ -158,7 +179,6 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Верхняя панель */}
       <View style={styles.topBar}>
         <Text style={styles.countText}>Всего: {reports.length} смен</Text>
         <TouchableOpacity style={styles.topExportBtn} onPress={handleExport}>

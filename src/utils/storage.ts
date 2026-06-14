@@ -190,3 +190,18 @@ export const getGoodsDraft = async (): Promise<any[] | null> => {
 export const clearGoodsDraft = async (): Promise<void> => {
   await AsyncStorage.removeItem(GOODS_DRAFT_KEY);
 };
+
+// Обновить отчёт
+export const updateReport = async (reportId: string, data: any): Promise<void> => {
+  await supabase.update('reports', `id=eq.${reportId}`, {
+    ...data,
+    updated_at: new Date().toISOString(),
+  });
+};
+
+// Получить отчёт по ID
+export const getReportById = async (reportId: string): Promise<SavedReport | null> => {
+  const data = await supabase.select('reports', `select=*&id=eq.${reportId}`);
+  if (data && data.length > 0) return mapRowToReport(data[0]);
+  return null;
+};
