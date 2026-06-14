@@ -45,14 +45,20 @@ export default function HistoryScreen() {
   };
 
   const canDelete = (report: SavedReport) => {
+    // Менеджер может удалить любой отчёт
     if (isManager) return true;
+    // Сотрудник может удалить только свой отчёт и не старше 2 дней
     const daysSinceReport = (Date.now() - new Date(report.date).getTime()) / (1000 * 60 * 60 * 24);
     return daysSinceReport < 2;
   };
 
+  const loadHistory = () => {
+    getHistory().then(setReports);
+  };
+
   useFocusEffect(
     useCallback(() => {
-      getHistory().then(setReports);
+      loadHistory();
     }, [])
   );
 
@@ -85,8 +91,8 @@ export default function HistoryScreen() {
           style: 'destructive',
           onPress: async () => {
             await deleteReport(report.id);
-            setReports(prev => prev.filter(r => r.id !== report.id));
-            Alert.alert('Удалено', 'Отчёт удалён');
+            loadHistory(); // Обновляем список после удаления
+            setExpandedId(null); // Закрываем развёрнутую карточку
           },
         },
       ]
