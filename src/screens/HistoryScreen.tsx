@@ -81,7 +81,6 @@ export default function HistoryScreen() {
   };
 
   const handleDelete = (report: SavedReport) => {
-    console.log('Удаляю отчёт:', report.id);
     Alert.alert(
       'Удаление отчёта',
       `Вы уверены, что хотите удалить отчёт от ${formatDate(report.date)}?`,
@@ -91,11 +90,14 @@ export default function HistoryScreen() {
           text: 'Удалить',
           style: 'destructive',
           onPress: async () => {
-            console.log('Подтверждено удаление');
-            await deleteReport(report.id);
-            console.log('Удалено, обновляю список');
-            loadHistory();
-            setExpandedId(null);
+            try {
+              await deleteReport(report.id);
+              loadHistory();
+              setExpandedId(null);
+              Alert.alert('Готово', 'Отчёт удалён');
+            } catch (e: any) {
+              Alert.alert('Ошибка', e.message);
+            }
           },
         },
       ]

@@ -211,12 +211,31 @@ export const getReportById = async (reportId: string): Promise<SavedReport | nul
 
 // Удалить отчёт
 export const deleteReport = async (reportId: string): Promise<void> => {
-  await fetch(`${SUPABASE_URL}/rest/v1/reports?id=eq.${reportId}`, {
-    method: 'DELETE',
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  try {
+    console.log('DELETE запрос для отчёта:', reportId);
+    const url = `${SUPABASE_URL}/rest/v1/reports?id=eq.${reportId}`;
+    console.log('URL:', url);
+    
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    console.log('Статус ответа:', res.status);
+    
+    if (!res.ok) {
+      const text = await res.text();
+      console.log('Ошибка удаления:', text);
+      throw new Error(text);
+    }
+    
+    console.log('Отчёт успешно удалён');
+  } catch (e: any) {
+    console.log('Исключение при удалении:', e.message);
+    throw e;
+  }
 };
