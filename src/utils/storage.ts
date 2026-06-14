@@ -62,7 +62,7 @@ const getLocalHistory = async (): Promise<SavedReport[]> => {
 const mapRowToReport = (row: any): SavedReport => ({
   id: String(row.id), date: row.date, workerName: row.worker_name || '',
   dashTotal: Number(row.dash_total) || 0, dashCash: Number(row.dash_cash) || 0, dashCashless: Number(row.dash_cashless) || 0,
-  factTotal: Number(row.fact_total) || 0, factCash: Number(row.fact_cash) || 0, factCashless: Number(row.fact_cashless) || 0,
+  factTotal: Number(row.fact_total) || 0, factCash: Number(row.fact_cash) || 0, factCashless: Number(row.fact_cashless) || 0, transfers: Number(row.transfers) || 0,
   twoPercent: Number(row.two_percent) || 0, difference: Number(row.difference) || 0,
   expenses: row.expenses || [], goodsTaken: row.goods_taken || [],
   cashTakenItems: row.cash_taken_items || [], cleanerAmount: row.cleaner_amount || 0,
