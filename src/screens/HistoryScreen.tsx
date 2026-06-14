@@ -210,7 +210,10 @@ export default function HistoryScreen() {
               {deletable && (
                 <TouchableOpacity
                   style={[styles.exportBtn, { borderColor: COLORS.red }]}
-                  onPress={() => handleDelete(item)}
+                  onPress={() => {
+                    console.log('Кнопка удаления нажата!');
+                    handleDelete(item);
+                  }}
                 >
                   <Text style={[styles.exportBtnText, { color: COLORS.red }]}>🗑️ Удалить</Text>
                 </TouchableOpacity>
