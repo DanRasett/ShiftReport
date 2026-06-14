@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, Platform } f
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import { SavedReport } from '../types';
-import { getHistory } from '../utils/storage';
+import { getHistory, deleteReport } from '../utils/storage';
 import { exportHistoryToExcel, getReportText } from '../utils/export';
 import { useAuth } from '../utils/AuthContext';
 
@@ -44,6 +44,12 @@ export default function HistoryScreen() {
     return daysSinceReport < 2;
   };
 
+  const canDelete = (report: SavedReport) => {
+    if (isManager) return true;
+    const daysSinceReport = (Date.now() - new Date(report.date).getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceReport < 2;
+  };
+
   useFocusEffect(
     useCallback(() => {
       getHistory().then(setReports);
@@ -68,6 +74,25 @@ export default function HistoryScreen() {
     exportHistoryToExcel(reports);
   };
 
+  const handleDelete = (report: SavedReport) => {
+    Alert.alert(
+      'Удаление отчёта',
+      `Вы уверены, что хотите удалить отчёт от ${formatDate(report.date)}?`,
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Удалить',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteReport(report.id);
+            setReports(prev => prev.filter(r => r.id !== report.id));
+            Alert.alert('Удалено', 'Отчёт удалён');
+          },
+        },
+      ]
+    );
+  };
+
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
   };
@@ -76,6 +101,7 @@ export default function HistoryScreen() {
     const isExpanded = expandedId === item.id;
     const isPaid = item.salaryPaid === true;
     const editable = canEdit(item);
+    const deletable = canDelete(item);
     const diffText =
       item.difference > 0
         ? `Пересдача: +${formatNum(item.difference)} ₽`
@@ -168,6 +194,14 @@ export default function HistoryScreen() {
                   onPress={() => navigation.navigate('EditReport', { reportId: item.id })}
                 >
                   <Text style={[styles.exportBtnText, { color: COLORS.yellow }]}>✏️ Изменить</Text>
+                </TouchableOpacity>
+              )}
+              {deletable && (
+                <TouchableOpacity
+                  style={[styles.exportBtn, { borderColor: COLORS.red }]}
+                  onPress={() => handleDelete(item)}
+                >
+                  <Text style={[styles.exportBtnText, { color: COLORS.red }]}>🗑️ Удалить</Text>
                 </TouchableOpacity>
               )}
             </View>

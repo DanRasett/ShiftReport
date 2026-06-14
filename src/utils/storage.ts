@@ -5,6 +5,9 @@ import { supabase } from './supabase';
 const CREDENTIALS_KEY = '@smartshell_credentials';
 const DRAFT_KEY = '@shift_draft';
 const GOODS_DRAFT_KEY = '@goods_draft';
+const SUPABASE_URL = 'https://glilovtznlhiskipkrkk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsaWxvdnR6bmxoaXNraXBrcmtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzOTE0NjksImV4cCI6MjA5Mzk2NzQ2OX0.5JbTDMdq7wRoNPK54DD7j7KwWaZtJjGlWm1aD_xe_co';
+
 
 // ============================================================
 // Отчёты
@@ -204,4 +207,16 @@ export const getReportById = async (reportId: string): Promise<SavedReport | nul
   const data = await supabase.select('reports', `select=*&id=eq.${reportId}`);
   if (data && data.length > 0) return mapRowToReport(data[0]);
   return null;
+};
+
+// Удалить отчёт
+export const deleteReport = async (reportId: string): Promise<void> => {
+  await fetch(`${SUPABASE_URL}/rest/v1/reports?id=eq.${reportId}`, {
+    method: 'DELETE',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+  });
 };
