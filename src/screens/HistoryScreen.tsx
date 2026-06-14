@@ -81,27 +81,37 @@ export default function HistoryScreen() {
   };
 
   const handleDelete = (report: SavedReport) => {
-    Alert.alert(
-      'Удаление отчёта',
-      `Вы уверены, что хотите удалить отчёт от ${formatDate(report.date)}?`,
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Удалить',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteReport(report.id);
-              loadHistory();
-              setExpandedId(null);
-              Alert.alert('Готово', 'Отчёт удалён');
-            } catch (e: any) {
-              Alert.alert('Ошибка', e.message);
-            }
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Вы уверены, что хотите удалить отчёт от ${formatDate(report.date)}?`)) {
+        deleteReport(report.id)
+          .then(() => {
+            loadHistory();
+            setExpandedId(null);
+          })
+          .catch(e => alert('Ошибка: ' + e.message));
+      }
+    } else {
+      Alert.alert(
+        'Удаление отчёта',
+        `Вы уверены, что хотите удалить отчёт от ${formatDate(report.date)}?`,
+        [
+          { text: 'Отмена', style: 'cancel' },
+          {
+            text: 'Удалить',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteReport(report.id);
+                loadHistory();
+                setExpandedId(null);
+              } catch (e: any) {
+                Alert.alert('Ошибка', e.message);
+              }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const toggleExpand = (id: string) => {
