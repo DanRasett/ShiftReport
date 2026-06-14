@@ -156,9 +156,8 @@ export default function HistoryScreen() {
               Дэш: {formatNum(item.dashTotal)} ₽ (Нал: {formatNum(item.dashCash)}, Карта: {formatNum(item.dashCashless)})
             </Text>
             <Text style={styles.detailText}>
-              Факт: {formatNum(item.factTotal)} ₽ (Нал: {formatNum(item.factCash)}, Карта: {formatNum(item.factCashless)})
+              Факт: {formatNum(item.factTotal)} ₽ (Нал: {formatNum(item.factCash)}, Карта: {formatNum(item.factCashless)}, Переводы: {formatNum(item.factCashless)})
             </Text>
-            {item.transfers ? <Text style={styles.detailText}>Переводы: {formatNum(item.transfers)} ₽</Text> : null}
             <Text style={styles.detailText}>2%: {formatNum(item.twoPercent)} ₽</Text>
             {item.cleanerAmount != null && item.cleanerAmount > 0 && (
               <View style={styles.expensesBlock}>
