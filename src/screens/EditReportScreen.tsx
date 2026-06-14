@@ -7,6 +7,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { getReportById, updateReport, getWorkersFromSupabase } from '../utils/storage';
 import { getGoodsWithPrices } from '../utils/smartshell';
 import { SavedReport } from '../types';
+import { calculateShift } from '../utils/calculations';
 import PickerModal from '../components/PickerModal';
 
 const COLORS = {
@@ -113,11 +114,36 @@ export default function EditReportScreen() {
 
   const handleSave = async () => {
     setSaving(true);
+
+    const cleanAmount = parseFloat(cleanerAmount) || 0;
+    const transAmount = parseFloat(transfers) || 0;
+
+    const cashTakenTotalAmount = cashTaken
+      .filter(c => c.workerName.trim() && c.amount.trim())
+      .reduce((sum, c) => sum + (parseInt(c.amount) || 0), 0);
+
+    // Пересчитываем все зависимые значения
+    const calc = calculateShift(
+      {
+        dashCash: String(report!.dashCash),
+        dashCashless: String(report!.dashCashless),
+        factCash: factCash,
+        factCashless: factCashless,
+        transfers: transfers,
+        expenses: [],
+      },
+      cleanAmount,
+      cashTakenTotalAmount
+    );
+
     await updateReport(reportId, {
       fact_cash: parseFloat(factCash) || 0,
       fact_cashless: parseFloat(factCashless) || 0,
-      cleaner_amount: parseFloat(cleanerAmount) || 0,
-      transfers: parseFloat(transfers) || 0,
+      cleaner_amount: cleanAmount,
+      transfers: transAmount,
+      fact_total: calc.factTotal,
+      two_percent: calc.twoPercent,
+      difference: calc.difference,
       goods_taken: goodsTaken
         .filter(g => g.workerName.trim() && g.goodsName.trim())
         .map(g => ({
@@ -133,6 +159,7 @@ export default function EditReportScreen() {
           amount: parseInt(c.amount) || 0,
         })),
     });
+
     setSaving(false);
     Alert.alert('Сохранено', 'Отчёт обновлён');
     navigation.goBack();
