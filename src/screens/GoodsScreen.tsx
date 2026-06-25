@@ -1,17 +1,15 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { GoodItem, GoodDifference } from '../types';
+import { GoodDifference, GoodItem } from '../types';
+import { MetricPill, ScreenHeader, ScreenLayout, SectionTitle, SurfaceCard, sharedInputStyles, useResponsiveLayout } from '../ui/layout';
+import { COLORS } from '../ui/theme';
+import { getGoodsDraft, saveGoodsDraft } from '../utils/storage';
 import { getGoodsData, GoodData } from '../utils/smartshell';
-import { saveGoodsDraft, getGoodsDraft } from '../utils/storage';
 import { useAuth } from '../utils/AuthContext';
 
-const COLORS = {
-  bg: '#1a1d23', card: '#21242b', border: '#2a2d35', text: '#e0e0e0',
-  textDim: '#8b8d94', green: '#4caf93', red: '#e0556a', inputBg: '#282c34',
-};
-
 export default function GoodsScreen() {
+  const layout = useResponsiveLayout();
   const { isLoggedIn } = useAuth();
   const [goods, setGoods] = useState<GoodItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -27,101 +25,309 @@ export default function GoodsScreen() {
     }, [isLoggedIn])
   );
 
+  useEffect(() => {
+    if (goods.length > 0) {
+      saveGoodsDraft(goods);
+    }
+  }, [goods]);
+
   const fetchGoods = async () => {
     try {
       const data = await getGoodsData();
       const saved = await getGoodsDraft();
-      const items = data.map((d: GoodData) => {
-        const sv = saved?.find((s: any) => s.id === String(d.id));
-        return { id: String(d.id), name: d.name, shellQuantity: d.quantity, factQuantity: sv?.factQuantity || '' };
+      const items = data.map((item: GoodData) => {
+        const savedItem = saved?.find((entry: any) => entry.id === String(item.id));
+        return {
+          id: String(item.id),
+          name: item.name,
+          shellQuantity: item.quantity,
+          factQuantity: savedItem?.factQuantity || '',
+        };
       });
       setGoods(items);
       setLoaded(true);
       setDifferences([]);
-    } catch (e) {}
+    } catch (error) {
+      setGoods([]);
+      setLoaded(true);
+    }
   };
 
-  useEffect(() => { if (goods.length > 0) saveGoodsDraft(goods); }, [goods]);
-
-  const updateFact = (id: string, v: string) => setGoods(prev => prev.map(g => g.id === id ? { ...g, factQuantity: v } : g));
+  const updateFact = (id: string, value: string) => {
+    setGoods((current) => current.map((item) => (item.id === id ? { ...item, factQuantity: value } : item)));
+  };
 
   const calcDiff = () => {
-    const diff: GoodDifference[] = [];
-    goods.forEach(g => { const f = parseInt(g.factQuantity) || 0; const d = f - g.shellQuantity; if (d !== 0) diff.push({ name: g.name, difference: d }); });
-    setDifferences(diff);
+    const nextDifferences: GoodDifference[] = [];
+    goods.forEach((item) => {
+      const fact = parseInt(item.factQuantity, 10) || 0;
+      const difference = fact - item.shellQuantity;
+      if (difference !== 0) {
+        nextDifferences.push({ name: item.name, difference });
+      }
+    });
+    setDifferences(nextDifferences);
   };
+
+  const totals = useMemo(() => {
+    return goods.reduce(
+      (accumulator, item) => {
+        accumulator.shell += item.shellQuantity;
+        accumulator.fact += parseInt(item.factQuantity, 10) || 0;
+        return accumulator;
+      },
+      { shell: 0, fact: 0 }
+    );
+  }, [goods]);
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.green} />
-        <Text style={styles.loadingText}>Загрузка товаров...</Text>
-      </View>
+      <ScreenLayout scroll={false}>
+        <View style={styles.centerState}>
+          <ActivityIndicator size="large" color={COLORS.accent} />
+          <Text style={styles.stateText}>Получаем товары из SmartShell...</Text>
+        </View>
+      </ScreenLayout>
     );
   }
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Инвентаризация товаров</Text>
-        <TouchableOpacity style={styles.loadBtn} onPress={fetchGoods} disabled={loading}>
-          <Text style={styles.loadBtnText}>{loaded ? 'Обновить' : 'Загрузить'}</Text>
-        </TouchableOpacity>
+    <ScreenLayout>
+      <ScreenHeader
+        title="Инвентаризация"
+        subtitle="Сравните остатки из SmartShell с фактическим количеством и сразу увидите расхождения."
+        right={
+          <TouchableOpacity style={styles.primaryAction} onPress={fetchGoods} disabled={loading}>
+            <Text style={styles.primaryActionText}>{loaded ? 'Обновить данные' : 'Загрузить товары'}</Text>
+          </TouchableOpacity>
+        }
+      />
+
+      <View style={[styles.summaryGrid, layout.isDesktop && styles.summaryGridDesktop]}>
+        <MetricPill label="Позиций" value={String(goods.length)} accent />
+        <MetricPill label="Shell" value={String(totals.shell)} />
+        <MetricPill label="Факт" value={String(totals.fact)} />
+        <MetricPill label="Расхождения" value={String(differences.length)} />
       </View>
-      {loaded && goods.length > 0 && (
-        <>
-          <View style={styles.tableHeader}><Text style={[styles.thText, styles.thName]}>Товар</Text><Text style={[styles.thText, styles.thShell]}>Shell</Text><Text style={[styles.thText, styles.thFact]}>Факт</Text></View>
-          {goods.map(item => (
-            <View key={item.id} style={styles.tableRow}>
-              <Text style={[styles.tdText, styles.tdName]} numberOfLines={2}>{item.name}</Text>
-              <Text style={[styles.tdText, styles.tdShell]}>{item.shellQuantity}</Text>
-              <TextInput style={styles.tdInput} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textDim} value={item.factQuantity} onChangeText={v => updateFact(item.id, v)} />
-            </View>
-          ))}
-          <TouchableOpacity style={styles.checkBtn} onPress={calcDiff}><Text style={styles.checkBtnText}>Проверить расхождения</Text></TouchableOpacity>
-        </>
-      )}
-      {differences.length > 0 && (
-        <View style={styles.diffCard}>
-          <Text style={styles.diffTitle}>Различие по товарам</Text><View style={styles.diffDivider} />
-          {differences.map((d, i) => (
-            <View key={i} style={styles.diffRow}><Text style={styles.diffName}>{d.name}</Text><Text style={[styles.diffValue, { color: d.difference > 0 ? COLORS.green : COLORS.red }]}>{d.difference > 0 ? '+' : ''}{d.difference}</Text></View>
-          ))}
+
+      <View style={[styles.mainGrid, layout.isDesktop && styles.mainGridDesktop]}>
+        <View style={styles.tableColumn}>
+          <SurfaceCard style={styles.tableCard}>
+            <SectionTitle
+              eyebrow="Склад"
+              title="Текущий список товаров"
+              subtitle="На desktop таблица остается читаемой за счет широкой карточки и отдельных колонок."
+            />
+            {loaded && goods.length > 0 ? (
+              <>
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.headerCell, styles.nameCell]}>Товар</Text>
+                  <Text style={[styles.headerCell, styles.qtyCell]}>Shell</Text>
+                  <Text style={[styles.headerCell, styles.qtyCell]}>Факт</Text>
+                </View>
+                {goods.map((item) => (
+                  <View key={item.id} style={styles.tableRow}>
+                    <Text style={[styles.bodyCell, styles.nameCell]} numberOfLines={2}>
+                      {item.name}
+                    </Text>
+                    <Text style={[styles.bodyCell, styles.qtyCell, styles.shellCell]}>{item.shellQuantity}</Text>
+                    <TextInput
+                      style={[sharedInputStyles.input, styles.factInput]}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor={COLORS.textSoft}
+                      value={item.factQuantity}
+                      onChangeText={(value) => updateFact(item.id, value)}
+                    />
+                  </View>
+                ))}
+                <TouchableOpacity style={styles.secondaryAction} onPress={calcDiff}>
+                  <Text style={styles.secondaryActionText}>Проверить расхождения</Text>
+                </TouchableOpacity>
+              </>
+            ) : null}
+
+            {loaded && goods.length === 0 ? (
+              <View style={styles.emptyBlock}>
+                <Text style={styles.emptyTitle}>Пустой список товаров</Text>
+                <Text style={styles.emptyText}>Возможно, смена еще не начата или в SmartShell нет остатков для выгрузки.</Text>
+              </View>
+            ) : null}
+          </SurfaceCard>
         </View>
-      )}
-      {loaded && goods.length === 0 && !loading && (
-        <View style={styles.emptyCard}><Text style={styles.emptyText}>Нет данных о товарах</Text><Text style={styles.emptySubText}>Возможно, смена не начата или нет продаж</Text></View>
-      )}
-      <View style={{ height: 40 }} />
-    </ScrollView>
+
+        <View style={styles.sideColumn}>
+          <SurfaceCard style={styles.sideCard}>
+            <SectionTitle
+              eyebrow="Контроль"
+              title="Обнаруженные расхождения"
+              subtitle="Разница считается как факт минус количество из системы."
+            />
+            {differences.length > 0 ? (
+              differences.map((item) => (
+                <View key={`${item.name}-${item.difference}`} style={styles.diffRow}>
+                  <Text style={styles.diffName}>{item.name}</Text>
+                  <Text style={[styles.diffValue, item.difference > 0 ? styles.diffPositive : styles.diffNegative]}>
+                    {item.difference > 0 ? '+' : ''}
+                    {item.difference}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>После проверки здесь появится список товаров, по которым есть разница.</Text>
+            )}
+          </SurfaceCard>
+        </View>
+      </View>
+    </ScreenLayout>
   );
 }
 
-import { useEffect } from 'react';
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg, padding: 16 },
-  center: { flex: 1, backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: COLORS.textDim, fontSize: 14, marginTop: 12 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  headerTitle: { color: COLORS.text, fontSize: 18, fontWeight: '700' },
-  loadBtn: { backgroundColor: COLORS.green, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
-  loadBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  tableHeader: { flexDirection: 'row', backgroundColor: COLORS.card, borderRadius: 8, padding: 12, marginBottom: 2, borderWidth: 1, borderColor: COLORS.border },
-  thText: { color: COLORS.textDim, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
-  thName: { flex: 3 }, thShell: { flex: 1, textAlign: 'center' }, thFact: { flex: 1, textAlign: 'center' },
-  tableRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 8, padding: 10, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border },
-  tdText: { color: COLORS.text, fontSize: 14 }, tdName: { flex: 3 }, tdShell: { flex: 1, textAlign: 'center' },
-  tdInput: { flex: 1, backgroundColor: COLORS.inputBg, borderRadius: 6, padding: 8, color: COLORS.text, fontSize: 14, textAlign: 'center', borderWidth: 1, borderColor: COLORS.border },
-  checkBtn: { backgroundColor: COLORS.green, borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 12 },
-  checkBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  diffCard: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginTop: 16, borderWidth: 1, borderColor: COLORS.border },
-  diffTitle: { color: COLORS.text, fontSize: 16, fontWeight: '700', marginBottom: 8 },
-  diffDivider: { height: 1, backgroundColor: COLORS.border, marginBottom: 12 },
-  diffRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  diffName: { color: COLORS.text, fontSize: 14, flex: 2 },
-  diffValue: { fontSize: 18, fontWeight: '700', flex: 1, textAlign: 'right' },
-  emptyCard: { backgroundColor: COLORS.card, borderRadius: 12, padding: 30, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
-  emptyText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
-  emptySubText: { color: COLORS.textDim, fontSize: 13, marginTop: 6, textAlign: 'center' },
+  centerState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  stateText: {
+    color: COLORS.textMuted,
+    fontSize: 15,
+  },
+  primaryAction: {
+    backgroundColor: COLORS.accent,
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  primaryActionText: {
+    color: COLORS.background,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  summaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 18,
+  },
+  summaryGridDesktop: {
+    flexWrap: 'nowrap',
+  },
+  mainGrid: {
+    gap: 18,
+  },
+  mainGridDesktop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  tableColumn: {
+    flex: 1.3,
+  },
+  sideColumn: {
+    flex: 0.8,
+  },
+  tableCard: {
+    gap: 16,
+  },
+  sideCard: {
+    gap: 16,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderSoft,
+  },
+  headerCell: {
+    color: COLORS.textSoft,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderSoft,
+  },
+  nameCell: {
+    flex: 1,
+  },
+  qtyCell: {
+    width: 90,
+    textAlign: 'center',
+  },
+  bodyCell: {
+    color: COLORS.text,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  shellCell: {
+    color: COLORS.textMuted,
+  },
+  factInput: {
+    width: 90,
+    textAlign: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+  },
+  secondaryAction: {
+    marginTop: 18,
+    backgroundColor: COLORS.surfaceStrong,
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  secondaryActionText: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  diffRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderSoft,
+  },
+  diffName: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  diffValue: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  diffPositive: {
+    color: COLORS.accent,
+  },
+  diffNegative: {
+    color: COLORS.danger,
+  },
+  emptyBlock: {
+    backgroundColor: COLORS.surfaceMuted,
+    borderRadius: 18,
+    padding: 20,
+  },
+  emptyTitle: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: COLORS.textMuted,
+    fontSize: 14,
+    lineHeight: 21,
+  },
 });

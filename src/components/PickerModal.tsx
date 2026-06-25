@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-
-const COLORS = {
-  bg: '#1a1d23', card: '#21242b', border: '#2a2d35', text: '#e0e0e0',
-  textDim: '#8b8d94', green: '#4caf93', inputBg: '#282c34',
-};
+import { sharedInputStyles, useResponsiveLayout } from '../ui/layout';
+import { COLORS } from '../ui/theme';
 
 interface Props {
   visible: boolean;
@@ -17,32 +20,49 @@ interface Props {
 }
 
 export default function PickerModal({ visible, title, items, onSelect, onClose }: Props) {
+  const { isDesktop } = useResponsiveLayout();
   const [search, setSearch] = useState('');
-  const filtered = items.filter((i) => i.label.toLowerCase().includes(search.toLowerCase()));
+
+  useEffect(() => {
+    if (!visible) {
+      setSearch('');
+    }
+  }, [visible]);
+
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => item.label.toLowerCase().includes(search.toLowerCase()));
+  }, [items, search]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.card}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+        <View style={[styles.card, isDesktop && styles.cardDesktop]}>
           <Text style={styles.title}>{title}</Text>
           <TextInput
-            style={styles.searchInput}
-            placeholder="Поиск..."
-            placeholderTextColor={COLORS.textDim}
+            style={sharedInputStyles.input}
+            placeholder="Поиск"
+            placeholderTextColor={COLORS.textSoft}
             value={search}
             onChangeText={setSearch}
           />
-          <ScrollView style={styles.list}>
-            {filtered.map((item) => (
-              <TouchableOpacity key={item.id} style={styles.item} onPress={() => onSelect(item)}>
-                <Text style={styles.itemText}>{item.label}</Text>
-                {item.sublabel && <Text style={styles.itemSublabel}>{item.sublabel}</Text>}
-              </TouchableOpacity>
-            ))}
-            {filtered.length === 0 && <Text style={styles.empty}>Ничего не найдено</Text>}
+          <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
+            {filteredItems.length > 0 ? (
+              filteredItems.map((item) => (
+                <TouchableOpacity key={item.id} style={styles.item} onPress={() => onSelect(item)}>
+                  <View style={styles.itemTextWrap}>
+                    <Text style={styles.itemText}>{item.label}</Text>
+                    {item.sublabel ? <Text style={styles.itemSublabel}>{item.sublabel}</Text> : null}
+                  </View>
+                  <Text style={styles.itemArrow}>Выбрать</Text>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>Ничего не найдено</Text>
+            )}
           </ScrollView>
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-            <Text style={styles.closeText}>Закрыть</Text>
+            <Text style={styles.closeBtnText}>Закрыть</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -51,15 +71,85 @@ export default function PickerModal({ visible, title, items, onSelect, onClose }
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
-  card: { backgroundColor: COLORS.card, borderRadius: 16, padding: 20, width: '90%', maxHeight: '80%', borderWidth: 1, borderColor: COLORS.border },
-  title: { color: COLORS.text, fontSize: 18, fontWeight: '700', marginBottom: 12, textAlign: 'center' },
-  searchInput: { backgroundColor: COLORS.inputBg, borderRadius: 8, padding: 10, color: COLORS.text, fontSize: 14, borderWidth: 1, borderColor: COLORS.border, marginBottom: 12 },
-  list: { maxHeight: 400 },
-  item: { paddingVertical: 12, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  itemText: { color: COLORS.text, fontSize: 15 },
-  itemSublabel: { color: COLORS.textDim, fontSize: 12, marginTop: 2 },
-  empty: { color: COLORS.textDim, textAlign: 'center', padding: 20 },
-  closeBtn: { marginTop: 12, backgroundColor: COLORS.inputBg, borderRadius: 8, padding: 12, alignItems: 'center' },
-  closeText: { color: COLORS.textDim, fontSize: 14, fontWeight: '600' },
+  overlay: {
+    flex: 1,
+    backgroundColor: COLORS.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 760,
+    maxHeight: '80%',
+    backgroundColor: COLORS.backgroundAlt,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: COLORS.borderSoft,
+    padding: 20,
+    gap: 14,
+  },
+  cardDesktop: {
+    padding: 24,
+  },
+  title: {
+    color: COLORS.text,
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  list: {
+    flexGrow: 0,
+  },
+  listContent: {
+    gap: 10,
+    paddingVertical: 4,
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.borderSoft,
+  },
+  itemTextWrap: {
+    flex: 1,
+  },
+  itemText: {
+    color: COLORS.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  itemSublabel: {
+    color: COLORS.textMuted,
+    fontSize: 13,
+    marginTop: 4,
+  },
+  itemArrow: {
+    color: COLORS.accent,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  emptyText: {
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    paddingVertical: 28,
+    fontSize: 14,
+  },
+  closeBtn: {
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceStrong,
+  },
+  closeBtnText: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });
