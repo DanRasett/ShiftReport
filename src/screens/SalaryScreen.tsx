@@ -429,9 +429,50 @@ export default function SalaryScreen() {
                       {data.shifts.map((shift) => {
                         const percentLabel = shift.dashTotal > 10000 ? '3%' : '2%';
                         return (
-                          <Text key={shift.id} style={styles.panelText}>
-                            {new Date(shift.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })} | дэш {formatNum(shift.dashTotal)} ₽ | факт {formatNum(shift.factTotal)} ₽ | {percentLabel} {formatNum(shift.twoPercent)} ₽ | {shift.difference > 0 ? '+' : ''}{formatNum(shift.difference)} ₽
-                          </Text>
+                          <View key={shift.id} style={styles.shiftDetailCard}>
+                            <Text style={styles.shiftDetailTitle}>
+                              {new Date(shift.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })} • дэш {formatNum(shift.dashTotal)} ₽ • факт {formatNum(shift.factTotal)} ₽
+                            </Text>
+                            <Text style={styles.panelText}>
+                              {percentLabel}: {formatNum(shift.twoPercent)} ₽ • {shift.difference > 0 ? '+' : ''}{formatNum(shift.difference)} ₽
+                            </Text>
+                            {shift.transfers ? (
+                              <Text style={styles.panelText}>Переводы: {formatNum(shift.transfers)} ₽</Text>
+                            ) : null}
+                            {shift.cleanerAmount ? (
+                              <Text style={styles.panelText}>Уборщица: {formatNum(shift.cleanerAmount)} ₽</Text>
+                            ) : null}
+                            {shift.goodsTaken?.length ? (
+                              <View style={styles.shiftSubsection}>
+                                <Text style={styles.shiftSubsectionTitle}>Товары</Text>
+                                {shift.goodsTaken.map((item, index) => (
+                                  <Text key={`${shift.id}-good-${index}`} style={styles.panelText}>
+                                    {item.workerName ? `${item.workerName}: ` : ''}
+                                    {item.name} x{item.quantity} = {formatNum(item.quantity * item.price)} ₽
+                                  </Text>
+                                ))}
+                              </View>
+                            ) : null}
+                            {shift.cashTakenItems?.length ? (
+                              <View style={styles.shiftSubsection}>
+                                <Text style={styles.shiftSubsectionTitle}>Деньги из кассы</Text>
+                                {shift.cashTakenItems.map((item, index) => (
+                                  <Text key={`${shift.id}-cash-${index}`} style={styles.panelText}>
+                                    {item.workerName ? `${item.workerName}: ` : ''}
+                                    {formatNum(item.amount)} ₽
+                                  </Text>
+                                ))}
+                              </View>
+                            ) : null}
+                            {shift.fine ? (
+                              <View style={styles.shiftSubsection}>
+                                <Text style={styles.shiftSubsectionTitle}>Штраф</Text>
+                                <Text style={[styles.panelText, styles.negativeText]}>
+                                  {formatNum(shift.fine.amount)} ₽, {shift.fine.reason}
+                                </Text>
+                              </View>
+                            ) : null}
+                          </View>
                         );
                       })}
                     </View>
@@ -648,6 +689,27 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 14,
     gap: 6,
+  },
+  shiftDetailCard: {
+    gap: 6,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderSoft,
+  },
+  shiftDetailTitle: {
+    color: COLORS.text,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 20,
+  },
+  shiftSubsection: {
+    marginTop: 4,
+    gap: 4,
+  },
+  shiftSubsectionTitle: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
   },
   panelTitle: {
     color: COLORS.text,

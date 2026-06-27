@@ -15,6 +15,7 @@ export default function GoodsScreen() {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [differences, setDifferences] = useState<GoodDifference[]>([]);
+  const [checked, setChecked] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -47,14 +48,17 @@ export default function GoodsScreen() {
       setGoods(items);
       setLoaded(true);
       setDifferences([]);
+      setChecked(false);
     } catch (error) {
       setGoods([]);
       setLoaded(true);
+      setChecked(false);
     }
   };
 
   const updateFact = (id: string, value: string) => {
     setGoods((current) => current.map((item) => (item.id === id ? { ...item, factQuantity: value } : item)));
+    setChecked(false);
   };
 
   const calcDiff = () => {
@@ -67,6 +71,7 @@ export default function GoodsScreen() {
       }
     });
     setDifferences(nextDifferences);
+    setChecked(true);
   };
 
   const totals = useMemo(() => {
@@ -110,75 +115,71 @@ export default function GoodsScreen() {
         <MetricPill label="Расхождения" value={String(differences.length)} />
       </View>
 
-      <View style={[styles.mainGrid, layout.isDesktop && styles.mainGridDesktop]}>
-        <View style={styles.tableColumn}>
-          <SurfaceCard style={styles.tableCard}>
-            <SectionTitle
-              eyebrow="Склад"
-              title="Текущий список товаров"
-              subtitle="На desktop таблица остается читаемой за счет широкой карточки и отдельных колонок."
-            />
-            {loaded && goods.length > 0 ? (
-              <>
-                <View style={styles.tableHeader}>
-                  <Text style={[styles.headerCell, styles.nameCell]}>Товар</Text>
-                  <Text style={[styles.headerCell, styles.qtyCell]}>Shell</Text>
-                  <Text style={[styles.headerCell, styles.qtyCell]}>Факт</Text>
-                </View>
-                {goods.map((item) => (
-                  <View key={item.id} style={styles.tableRow}>
-                    <Text style={[styles.bodyCell, styles.nameCell]} numberOfLines={2}>
-                      {item.name}
-                    </Text>
-                    <Text style={[styles.bodyCell, styles.qtyCell, styles.shellCell]}>{item.shellQuantity}</Text>
-                    <TextInput
-                      style={[sharedInputStyles.input, styles.factInput]}
-                      keyboardType="numeric"
-                      placeholder="0"
-                      placeholderTextColor={COLORS.textSoft}
-                      value={item.factQuantity}
-                      onChangeText={(value) => updateFact(item.id, value)}
-                    />
-                  </View>
-                ))}
-                <TouchableOpacity style={styles.secondaryAction} onPress={calcDiff}>
-                  <Text style={styles.secondaryActionText}>Проверить расхождения</Text>
-                </TouchableOpacity>
-              </>
-            ) : null}
-
-            {loaded && goods.length === 0 ? (
-              <View style={styles.emptyBlock}>
-                <Text style={styles.emptyTitle}>Пустой список товаров</Text>
-                <Text style={styles.emptyText}>Возможно, смена еще не начата или в SmartShell нет остатков для выгрузки.</Text>
+      <SurfaceCard style={styles.tableCard}>
+        <SectionTitle
+          eyebrow="Склад"
+          title="Текущий список товаров"
+          subtitle="Введите фактические значения, затем проверьте расхождения. Результат появится под таблицей."
+        />
+        {loaded && goods.length > 0 ? (
+          <>
+            <View style={styles.tableHeader}>
+              <Text style={[styles.headerCell, styles.nameCell]}>Товар</Text>
+              <Text style={[styles.headerCell, styles.qtyCell]}>Shell</Text>
+              <Text style={[styles.headerCell, styles.qtyCell]}>Факт</Text>
+            </View>
+            {goods.map((item) => (
+              <View key={item.id} style={styles.tableRow}>
+                <Text style={[styles.bodyCell, styles.nameCell]} numberOfLines={2}>
+                  {item.name}
+                </Text>
+                <Text style={[styles.bodyCell, styles.qtyCell, styles.shellCell]}>{item.shellQuantity}</Text>
+                <TextInput
+                  style={[sharedInputStyles.input, styles.factInput]}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor={COLORS.textSoft}
+                  value={item.factQuantity}
+                  onChangeText={(value) => updateFact(item.id, value)}
+                />
               </View>
-            ) : null}
-          </SurfaceCard>
-        </View>
+            ))}
+            <TouchableOpacity style={styles.secondaryAction} onPress={calcDiff}>
+              <Text style={styles.secondaryActionText}>Проверить расхождения</Text>
+            </TouchableOpacity>
+          </>
+        ) : null}
 
-        <View style={styles.sideColumn}>
-          <SurfaceCard style={styles.sideCard}>
-            <SectionTitle
-              eyebrow="Контроль"
-              title="Обнаруженные расхождения"
-              subtitle="Разница считается как факт минус количество из системы."
-            />
-            {differences.length > 0 ? (
-              differences.map((item) => (
-                <View key={`${item.name}-${item.difference}`} style={styles.diffRow}>
-                  <Text style={styles.diffName}>{item.name}</Text>
-                  <Text style={[styles.diffValue, item.difference > 0 ? styles.diffPositive : styles.diffNegative]}>
-                    {item.difference > 0 ? '+' : ''}
-                    {item.difference}
-                  </Text>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.emptyText}>После проверки здесь появится список товаров, по которым есть разница.</Text>
-            )}
-          </SurfaceCard>
-        </View>
-      </View>
+        {loaded && goods.length === 0 ? (
+          <View style={styles.emptyBlock}>
+            <Text style={styles.emptyTitle}>Пустой список товаров</Text>
+            <Text style={styles.emptyText}>Возможно, смена еще не начата или в SmartShell нет остатков для выгрузки.</Text>
+          </View>
+        ) : null}
+      </SurfaceCard>
+
+      {checked ? (
+        <SurfaceCard style={styles.resultCard}>
+          <SectionTitle
+            eyebrow="Контроль"
+            title={differences.length > 0 ? 'Обнаруженные расхождения' : 'Расхождений нет'}
+            subtitle="Разница считается как факт минус количество из системы."
+          />
+          {differences.length > 0 ? (
+            differences.map((item) => (
+              <View key={`${item.name}-${item.difference}`} style={styles.diffRow}>
+                <Text style={styles.diffName}>{item.name}</Text>
+                <Text style={[styles.diffValue, item.difference > 0 ? styles.diffPositive : styles.diffNegative]}>
+                  {item.difference > 0 ? '+' : ''}
+                  {item.difference}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>Все введенные фактические значения совпадают с остатками Shell.</Text>
+          )}
+        </SurfaceCard>
+      ) : null}
     </ScreenLayout>
   );
 }
@@ -215,23 +216,11 @@ const styles = StyleSheet.create({
   summaryGridDesktop: {
     flexWrap: 'nowrap',
   },
-  mainGrid: {
-    gap: 18,
-  },
-  mainGridDesktop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  tableColumn: {
-    flex: 1.3,
-  },
-  sideColumn: {
-    flex: 0.8,
-  },
   tableCard: {
     gap: 16,
   },
-  sideCard: {
+  resultCard: {
+    marginTop: 18,
     gap: 16,
   },
   tableHeader: {

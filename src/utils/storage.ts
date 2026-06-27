@@ -26,7 +26,7 @@ export const saveReport = async (report: SavedReport): Promise<void> => {
       fact_total: report.factTotal, fact_cash: report.factCash, fact_cashless: report.factCashless,
       two_percent: report.twoPercent, difference: report.difference, expenses: report.expenses || [],
       goods_taken: report.goodsTaken || [], cash_taken_items: report.cashTakenItems || [],
-      cleaner_amount: report.cleanerAmount || 0, fine: report.fine || null,
+      cleaner_amount: report.cleanerAmount || 0, transfers: report.transfers || 0, fine: report.fine || null,
     });
   } catch (e: any) {
     console.log('Save to Supabase failed, saved locally');
@@ -59,15 +59,34 @@ const getLocalHistory = async (): Promise<SavedReport[]> => {
   }
 };
 
+const pickNumber = (row: any, snakeKey: string, camelKey: string): number => {
+  return Number(row[snakeKey] ?? row[camelKey]) || 0;
+};
+
+const pickValue = <T>(row: any, snakeKey: string, camelKey: string, fallback: T): T => {
+  return (row[snakeKey] ?? row[camelKey] ?? fallback) as T;
+};
+
 const mapRowToReport = (row: any): SavedReport => ({
-  id: String(row.id), date: row.date, workerName: row.worker_name || '',
-  dashTotal: Number(row.dash_total) || 0, dashCash: Number(row.dash_cash) || 0, dashCashless: Number(row.dash_cashless) || 0,
-  factTotal: Number(row.fact_total) || 0, factCash: Number(row.fact_cash) || 0, factCashless: Number(row.fact_cashless) || 0, transfers: Number(row.transfers) || 0,
-  twoPercent: Number(row.two_percent) || 0, difference: Number(row.difference) || 0,
-  expenses: row.expenses || [], goodsTaken: row.goods_taken || [],
-  cashTakenItems: row.cash_taken_items || [], cleanerAmount: row.cleaner_amount || 0,
-  fine: row.fine || undefined, photoBase64: undefined,
-  salaryPaid: row.salary_paid || false,
+  id: String(row.id),
+  date: row.date,
+  workerName: row.worker_name ?? row.workerName ?? '',
+  dashTotal: pickNumber(row, 'dash_total', 'dashTotal'),
+  dashCash: pickNumber(row, 'dash_cash', 'dashCash'),
+  dashCashless: pickNumber(row, 'dash_cashless', 'dashCashless'),
+  factTotal: pickNumber(row, 'fact_total', 'factTotal'),
+  factCash: pickNumber(row, 'fact_cash', 'factCash'),
+  factCashless: pickNumber(row, 'fact_cashless', 'factCashless'),
+  transfers: pickNumber(row, 'transfers', 'transfers'),
+  twoPercent: pickNumber(row, 'two_percent', 'twoPercent'),
+  difference: pickNumber(row, 'difference', 'difference'),
+  expenses: pickValue(row, 'expenses', 'expenses', []),
+  goodsTaken: pickValue(row, 'goods_taken', 'goodsTaken', []),
+  cashTakenItems: pickValue(row, 'cash_taken_items', 'cashTakenItems', []),
+  cleanerAmount: pickNumber(row, 'cleaner_amount', 'cleanerAmount'),
+  fine: row.fine || undefined,
+  photoBase64: row.photoBase64 || undefined,
+  salaryPaid: Boolean(row.salary_paid ?? row.salaryPaid),
 });
 
 export const getUnpaidReports = async (): Promise<SavedReport[]> => {
