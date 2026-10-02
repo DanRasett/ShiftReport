@@ -1,0 +1,87 @@
+<svg width="1440" height="900" viewBox="0 0 1440 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="80" x2="1320" y2="840" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1220"/>
+      <stop offset="1" stop-color="#111A2D"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#1A2744"/>
+      <stop offset="1" stop-color="#141F35"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#050A16" flood-opacity="0.36"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7BD3B0"/>
+    </marker>
+  </defs>
+
+  <rect width="1440" height="900" rx="36" fill="url(#bg)"/>
+  <circle cx="1260" cy="150" r="200" fill="#17375C" fill-opacity="0.18"/>
+  <circle cx="180" cy="780" r="140" fill="#1B4C43" fill-opacity="0.12"/>
+
+  <text x="88" y="98" fill="#ECF3FF" font-family="Segoe UI, Arial, sans-serif" font-size="40" font-weight="700">
+    Простая схема ролевой модели доступа
+  </text>
+  <text x="88" y="136" fill="#98A8C7" font-family="Segoe UI, Arial, sans-serif" font-size="20">
+    ShiftReport, по текущим проверкам в коде
+  </text>
+
+  <rect x="88" y="172" width="520" height="68" rx="22" fill="#0F1A2D" stroke="#20314F"/>
+  <text x="118" y="215" fill="#F1C977" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">
+    owner и admin в приложении работают как manager
+  </text>
+
+  <rect x="88" y="304" width="380" height="300" rx="30" fill="url(#card)" stroke="#2A3A5F" filter="url(#shadow)"/>
+  <text x="120" y="370" fill="#ECF3FF" font-family="Segoe UI, Arial, sans-serif" font-size="36" font-weight="700">
+    Сотрудник
+  </text>
+  <text x="120" y="412" fill="#98A8C7" font-family="Segoe UI, Arial, sans-serif" font-size="20">
+    Базовый доступ
+  </text>
+  <text x="120" y="474" fill="#7BD3B0" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">
+    Что доступно
+  </text>
+  <text x="120" y="518" fill="#ECF3FF" font-family="Segoe UI, Arial, sans-serif" font-size="22">
+    <tspan x="120" dy="0">• Дашборд</tspan>
+    <tspan x="120" dy="34">• Смена</tspan>
+    <tspan x="120" dy="34">• Товар</tspan>
+    <tspan x="120" dy="34">• История</tspan>
+    <tspan x="120" dy="34">• Настройки</tspan>
+  </text>
+
+  <rect x="704" y="248" width="560" height="220" rx="30" fill="url(#card)" stroke="#2A3A5F" filter="url(#shadow)"/>
+  <text x="736" y="314" fill="#ECF3FF" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="700">
+    Active operator
+  </text>
+  <text x="736" y="358" fill="#7BD3B0" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">
+    Дополнительно
+  </text>
+  <text x="736" y="400" fill="#ECF3FF" font-family="Segoe UI, Arial, sans-serif" font-size="22">
+    <tspan x="736" dy="0">• Все права сотрудника</tspan>
+    <tspan x="736" dy="36">• Все рабочие блоки на экране "Смена"</tspan>
+  </text>
+
+  <rect x="704" y="520" width="560" height="244" rx="30" fill="url(#card)" stroke="#2A3A5F" filter="url(#shadow)"/>
+  <text x="736" y="586" fill="#ECF3FF" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="700">
+    Manager / Owner / Admin
+  </text>
+  <text x="736" y="630" fill="#7BD3B0" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">
+    Дополнительно
+  </text>
+  <text x="736" y="672" fill="#ECF3FF" font-family="Segoe UI, Arial, sans-serif" font-size="22">
+    <tspan x="736" dy="0">• Все права сотрудника</tspan>
+    <tspan x="736" dy="36">• Зарплата</tspan>
+    <tspan x="736" dy="36">• Сотрудники</tspan>
+    <tspan x="736" dy="36">• История без лимита 2 дней</tspan>
+    <tspan x="736" dy="36">• Работа со штрафами</tspan>
+  </text>
+
+  <path d="M 468 430 C 560 430, 580 358, 704 358" stroke="#7BD3B0" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M 468 484 C 560 484, 580 642, 704 642" stroke="#7BD3B0" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <rect x="88" y="804" width="1176" height="56" rx="18" fill="#0F1A2D" stroke="#20314F"/>
+  <text x="118" y="839" fill="#98A8C7" font-family="Segoe UI, Arial, sans-serif" font-size="18">
+    active operator может сочетаться с manager: тогда пользователь получает обе группы возможностей
+  </text>
+</svg>

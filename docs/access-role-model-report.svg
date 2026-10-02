@@ -1,0 +1,69 @@
+<svg width="1400" height="1040" viewBox="0 0 1400 1040" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#000000"/>
+    </marker>
+  </defs>
+
+  <rect width="1400" height="1040" fill="#FFFFFF"/>
+
+  <text x="60" y="70" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#000000">
+    Схема ролевой модели доступа ShiftReport
+  </text>
+
+  <rect x="60" y="110" width="1280" height="70" fill="#FFFFFF" stroke="#000000" stroke-width="2"/>
+  <text x="85" y="145" font-family="Arial, sans-serif" font-size="20" fill="#000000">
+    <tspan x="85" dy="0">Примечание: роли owner и admin в коде</tspan>
+    <tspan x="85" dy="26">обрабатываются так же, как manager</tspan>
+  </text>
+
+  <rect x="60" y="280" width="340" height="270" fill="#FFFFFF" stroke="#000000" stroke-width="2"/>
+  <text x="85" y="330" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#000000">
+    Сотрудник
+  </text>
+  <text x="85" y="372" font-family="Arial, sans-serif" font-size="20" fill="#000000">
+    Базовый доступ:
+  </text>
+  <text x="85" y="410" font-family="Arial, sans-serif" font-size="20" fill="#000000">
+    <tspan x="85" dy="0">• Дашборд</tspan>
+    <tspan x="85" dy="30">• Смена</tspan>
+    <tspan x="85" dy="30">• Товар</tspan>
+    <tspan x="85" dy="30">• История</tspan>
+    <tspan x="85" dy="30">• Настройки</tspan>
+  </text>
+
+  <rect x="560" y="240" width="760" height="170" fill="#FFFFFF" stroke="#000000" stroke-width="2"/>
+  <text x="585" y="290" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#000000">
+    Active operator
+  </text>
+  <text x="585" y="332" font-family="Arial, sans-serif" font-size="20" fill="#000000">
+    Дополнительно:
+  </text>
+  <text x="585" y="370" font-family="Arial, sans-serif" font-size="20" fill="#000000">
+    <tspan x="585" dy="0">• Все права сотрудника</tspan>
+    <tspan x="585" dy="30">• На экране "Смена" видны все рабочие блоки</tspan>
+  </text>
+
+  <rect x="560" y="470" width="760" height="300" fill="#FFFFFF" stroke="#000000" stroke-width="2"/>
+  <text x="585" y="520" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#000000">
+    Manager / Owner / Admin
+  </text>
+  <text x="585" y="562" font-family="Arial, sans-serif" font-size="20" fill="#000000">
+    Дополнительно:
+  </text>
+  <text x="585" y="600" font-family="Arial, sans-serif" font-size="20" fill="#000000">
+    <tspan x="585" dy="0">• Все права сотрудника</tspan>
+    <tspan x="585" dy="30">• "Зарплата"</tspan>
+    <tspan x="585" dy="30">• "Сотрудники"</tspan>
+    <tspan x="585" dy="30">• История без лимита 2 дней</tspan>
+    <tspan x="585" dy="30">• Работа со штрафами</tspan>
+  </text>
+
+  <path d="M 400 370 C 470 370, 500 325, 560 325" stroke="#000000" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 400 455 C 470 455, 500 580, 560 580" stroke="#000000" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="60" y="900" width="1280" height="60" fill="#FFFFFF" stroke="#000000" stroke-width="2"/>
+  <text x="85" y="937" font-family="Arial, sans-serif" font-size="19" fill="#000000">
+    Active operator может сочетаться с manager, тогда пользователь получает обе группы прав
+  </text>
+</svg>
