@@ -12,7 +12,7 @@
     "@expo/cli": "^55.0.29",
     "@expo/metro-runtime": "~55.0.11",
     "@jsr/xlsft__smartshell-sdk": "^1.0.5",
-    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-async-storage/async-storage": "3.1.1",
     "@react-navigation/bottom-tabs": "^7.15.11",
     "@react-navigation/drawer": "^7.10.2",
     "@react-navigation/native": "^7.2.2",
