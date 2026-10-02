@@ -30,7 +30,7 @@
     "expo-sharing": "~55.0.18",
     "expo-status-bar": "~55.0.6",
     "file-saver": "^2.0.5",
-    "metro": "^0.83.3",
+    "metro": "^0.87.1",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-native": "0.83.6",
