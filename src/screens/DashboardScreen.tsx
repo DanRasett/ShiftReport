@@ -12,6 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getHistory } from '../utils/storage';
 import { SavedReport } from '../types';
 import { COLORS } from '../theme';
+import Animated, { FadeIn, FadeInDown, ReduceMotion } from 'react-native-reanimated';
 
 const formatNum = (value: number) => value.toLocaleString('ru-RU');
 
@@ -39,6 +40,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
   const [loading, setLoading] = useState(true);
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
+  const entrance = (delay: number) => FadeInDown.duration(280).delay(delay).reduceMotion(ReduceMotion.System);
 
   useFocusEffect(
     useCallback(() => {
@@ -104,7 +106,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
       contentContainerStyle={[styles.content, isDesktop && styles.contentDesktop]}
       showsVerticalScrollIndicator={false}
     >
-      <View style={[styles.topbar, isDesktop && styles.topbarDesktop]}>
+      <Animated.View entering={FadeIn.duration(220).reduceMotion(ReduceMotion.System)} style={[styles.topbar, isDesktop && styles.topbarDesktop]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Открыть меню"
@@ -128,15 +130,15 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
           <View style={styles.onlineDot} />
           <Text style={styles.onlineText}>LIVE</Text>
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={[styles.hero, isDesktop && styles.heroDesktop]}>
+      <Animated.View entering={entrance(40)} style={[styles.hero, isDesktop && styles.heroDesktop]}>
         <Text style={styles.eyebrow}>КОНТРОЛЬ СМЕН</Text>
         <Text style={[styles.title, isDesktop && styles.titleDesktop]}>Dashboard</Text>
         <Text style={[styles.heroDescription, isDesktop && styles.heroDescriptionDesktop]}>Сводка по выручке, сменам и товарам</Text>
-      </View>
+      </Animated.View>
 
-      <View style={[styles.primaryPanel, isDesktop && styles.primaryPanelDesktop]}>
+      <Animated.View entering={entrance(80)} style={[styles.primaryPanel, isDesktop && styles.primaryPanelDesktop]}>
         <View style={styles.panelHeader}>
           <View>
             <Text style={styles.eyebrow}>ОБЩАЯ ВЫРУЧКА</Text>
@@ -164,17 +166,17 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
             <Text style={styles.metricValue}>{formatNum(totalCleaner)} ₽</Text>
           </View>
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={[styles.sectionBar, isDesktop && styles.sectionBarDesktop]}>
+      <Animated.View entering={entrance(130)} style={[styles.sectionBar, isDesktop && styles.sectionBarDesktop]}>
         <View>
           <Text style={styles.eyebrow}>АКТИВНОСТЬ</Text>
           <Text style={[styles.sectionTitle, isDesktop && styles.sectionTitleDesktop]}>Последние 7 дней</Text>
         </View>
         <Text style={[styles.sectionMeta, isDesktop && styles.sectionMetaDesktop]}>{last7Days.length} смен</Text>
-      </View>
+      </Animated.View>
 
-      <View style={[styles.panel, isDesktop && styles.panelDesktop]}>
+      <Animated.View entering={entrance(160)} style={[styles.panel, isDesktop && styles.panelDesktop]}>
         <View style={styles.weekTotalRow}>
           <Text style={styles.weekTotal}>{formatNum(weekRevenue)} ₽</Text>
           <Text style={styles.weekTotalLabel}>ВЫРУЧКА</Text>
@@ -182,17 +184,17 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
         <DataRow label="Наличные" value={`${formatNum(weekCash)} ₽`} />
         <DataRow label="Безналичные" value={`${formatNum(weekCashless)} ₽`} />
         <DataRow label="Смены закрыты" value={String(last7Days.length)} accent />
-      </View>
+      </Animated.View>
 
-      <View style={[styles.sectionBar, isDesktop && styles.sectionBarDesktop]}>
+      <Animated.View entering={entrance(210)} style={[styles.sectionBar, isDesktop && styles.sectionBarDesktop]}>
         <View>
           <Text style={styles.eyebrow}>ТОВАРЫ</Text>
           <Text style={[styles.sectionTitle, isDesktop && styles.sectionTitleDesktop]}>Топ по ЗП</Text>
         </View>
         <Text style={[styles.sectionMeta, isDesktop && styles.sectionMetaDesktop]}>ТОП 05</Text>
-      </View>
+      </Animated.View>
 
-      <View style={[styles.panel, isDesktop && styles.panelDesktop]}>
+      <Animated.View entering={entrance(240)} style={[styles.panel, isDesktop && styles.panelDesktop]}>
         {topGoods.length > 0 ? (
           topGoods.map(([name, quantity], index) => (
             <View key={name} style={styles.listRow}>
@@ -204,17 +206,17 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
         ) : (
           <Text style={styles.emptyText}>Товары пока не списывались</Text>
         )}
-      </View>
+      </Animated.View>
 
-      <View style={[styles.sectionBar, isDesktop && styles.sectionBarDesktop]}>
+      <Animated.View entering={entrance(290)} style={[styles.sectionBar, isDesktop && styles.sectionBarDesktop]}>
         <View>
           <Text style={styles.eyebrow}>КОМАНДА</Text>
           <Text style={[styles.sectionTitle, isDesktop && styles.sectionTitleDesktop]}>Смены сотрудников</Text>
         </View>
         <Text style={[styles.sectionMeta, isDesktop && styles.sectionMetaDesktop]}>{workers.length} чел.</Text>
-      </View>
+      </Animated.View>
 
-      <View style={[styles.panel, isDesktop && styles.panelDesktop]}>
+      <Animated.View entering={entrance(320)} style={[styles.panel, isDesktop && styles.panelDesktop]}>
         {workers.length > 0 ? (
           workers.map(([name, count], index) => (
             <View key={name} style={styles.listRow}>
@@ -226,7 +228,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
         ) : (
           <Text style={styles.emptyText}>Смены еще не закрыты</Text>
         )}
-      </View>
+      </Animated.View>
     </ScrollView>
   );
 }

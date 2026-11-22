@@ -16,6 +16,7 @@
 - src/theme.ts: глобальные цвета синхронизированы с CyberInfo.
 - Во всех TSX-экранах и модальных компонентах `borderRadius` приведен к нулю.
 - Папка подключена к существующему remote `origin`; текущая ветка `test/shiftreport` опубликована в GitHub.
+- Motion: Dashboard и модальные окна используют короткие opacity/translateY-переходы Reanimated с `ReduceMotion.System`.
 
 ## Что проверено
 

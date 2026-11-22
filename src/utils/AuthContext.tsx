@@ -6,6 +6,7 @@ import {
 import { loginToSmartShell, logoutFromSmartShell, getDetailedWorkers, getUserRole, getGoodsLogs } from './smartshell';
 import { getCredentials, saveCredentials, removeCredentials, syncWorkersToSupabase, getHistory } from './storage';
 import { COLORS } from '../theme';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 
 interface AuthContextType {
   isLoggedIn: boolean;
@@ -157,7 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {/* Модальное окно входа */}
       <Modal visible={showLogin && !isLoggedIn} transparent animationType="fade">
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <Animated.View entering={FadeInDown.duration(260).reduceMotion(ReduceMotion.System)} style={styles.modalCard}>
             <Text style={styles.modalTitle}>Вход в SmartShell</Text>
             <Text style={styles.modalSubtitle}>Введите данные для входа в систему</Text>
             <Text style={styles.modalLabel}>Логин (номер телефона):</Text>
@@ -168,14 +169,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             <TouchableOpacity style={[styles.modalOkBtn, loginLoading && { opacity: 0.6 }]} onPress={handleLogin} disabled={loginLoading}>
               <Text style={styles.modalOkText}>{loginLoading ? 'Вход...' : 'Войти'}</Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
 
       {/* Модальное окно статистики после входа */}
       <Modal visible={showStats && isLoggedIn} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.statsCard}>
+          <Animated.View entering={FadeInDown.duration(260).reduceMotion(ReduceMotion.System)} style={styles.statsCard}>
             <Text style={styles.statsTitle}>Статистика</Text>
 
             {statsLoading ? (
@@ -222,7 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             <TouchableOpacity style={styles.statsCloseBtn} onPress={() => setShowStats(false)}>
               <Text style={styles.statsCloseText}>Закрыть</Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </AuthContext.Provider>

@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput,
 } from 'react-native';
 import { COLORS } from '../theme';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 
 interface Props {
   visible: boolean;
@@ -19,7 +20,7 @@ export default function PickerModal({ visible, title, items, onSelect, onClose }
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
-        <View style={styles.card}>
+        <Animated.View entering={FadeInDown.duration(240).reduceMotion(ReduceMotion.System)} style={styles.card}>
           <Text style={styles.title}>{title}</Text>
           <TextInput
             style={styles.searchInput}
@@ -40,7 +41,7 @@ export default function PickerModal({ visible, title, items, onSelect, onClose }
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
             <Text style={styles.closeText}>Закрыть</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
