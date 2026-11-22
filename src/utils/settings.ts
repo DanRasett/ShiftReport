@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 
 export interface ShiftSettings {
@@ -12,7 +13,14 @@ export interface ShiftSettings {
   showCleaner: boolean;
 }
 
-const defaultSettings: ShiftSettings = {
+export interface CustomShiftItem {
+  id: string;
+  label: string;
+}
+
+const CUSTOM_SHIFT_ITEMS_KEY = '@custom_shift_items';
+
+export const defaultSettings: ShiftSettings = {
   showWorker: true, showDash: true, showFact: true,
   showGoodsTaken: true, showCashTaken: true, showFine: true,
   showOtherExpenses: true, showPhoto: true, showCleaner: true,
@@ -43,4 +51,21 @@ export const saveSettings = async (settings: ShiftSettings): Promise<void> => {
       updated_at: new Date().toISOString(),
     });
   } catch (e) {}
-};  
+};
+
+export const getCustomShiftItems = async (): Promise<CustomShiftItem[]> => {
+  try {
+    const saved = await AsyncStorage.getItem(CUSTOM_SHIFT_ITEMS_KEY);
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is CustomShiftItem => Boolean(item?.id && item?.label))
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+export const saveCustomShiftItems = async (items: CustomShiftItem[]): Promise<void> => {
+  await AsyncStorage.setItem(CUSTOM_SHIFT_ITEMS_KEY, JSON.stringify(items));
+};

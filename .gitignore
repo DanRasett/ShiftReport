@@ -31,7 +31,29 @@ yarn-error.*
 *.pem
 
 # local env files
-.env*.local
+.env
+.env.*
+*.local.env
+!.env.example
+
+# local AI assistant and agent settings
+.codex/
+.agents/
+.claude/
+.cursor/
+.windsurf/
+.aider*
+AGENTS.local.md
+CLAUDE.local.md
+
+# local reports, caches and temporary files
+coverage/
+.cache/
+playwright-report/
+test-results/
+*.log
+tmp/
+temp/
 
 # typescript
 *.tsbuildinfo

@@ -4,11 +4,7 @@ import {
   TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { getWorkersWithSettings, updateWorkerSettings } from '../utils/storage';
-
-const COLORS = {
-  bg: '#1a1d23', card: '#21242b', border: '#2a2d35', text: '#e0e0e0',
-  textDim: '#8b8d94', green: '#4caf93', inputBg: '#282c34',
-};
+import { COLORS } from '../theme';
 
 export default function WorkersSettingsScreen() {
   const [workers, setWorkers] = useState<any[]>([]);
@@ -109,12 +105,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg, padding: 16 },
   center: { flex: 1, backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center' },
   title: { color: COLORS.text, fontSize: 22, fontWeight: '700', marginBottom: 16 },
-  card: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border },
+  card: { backgroundColor: COLORS.card, borderRadius: 0, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border },
   workerName: { color: COLORS.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   role: { color: COLORS.textDim, fontSize: 13, marginBottom: 12 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   label: { color: COLORS.textDim, fontSize: 14, flex: 1 },
-  input: { backgroundColor: COLORS.inputBg, borderRadius: 8, padding: 10, color: COLORS.text, fontSize: 16, borderWidth: 1, borderColor: COLORS.border, width: 120, textAlign: 'center' },
-  saveBtn: { backgroundColor: COLORS.green, borderRadius: 8, padding: 10, alignItems: 'center', marginTop: 8 },
-  saveBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  input: { backgroundColor: COLORS.inputBg, borderRadius: 0, padding: 10, color: COLORS.text, fontSize: 16, borderWidth: 1, borderColor: COLORS.border, width: 120, textAlign: 'center' },
+  saveBtn: { backgroundColor: COLORS.green, borderRadius: 0, padding: 10, alignItems: 'center', marginTop: 8 },
+  saveBtnText: { color: COLORS.bg, fontSize: 14, fontWeight: '800' },
 });

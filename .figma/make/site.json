@@ -1,0 +1,10 @@
+{
+  "description": "No application functionality is specified; the request focuses on bootstrapping an imported project and configuring deployment and preview workflows.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

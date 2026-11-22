@@ -16,13 +16,8 @@ import {
 import { useAuth } from '../utils/AuthContext';
 import { useIsFocused } from '@react-navigation/native';
 import PickerModal from '../components/PickerModal';
-import { getSettings, ShiftSettings } from '../utils/settings';
-
-const COLORS = {
-  bg: '#1a1d23', card: '#21242b', border: '#2a2d35', text: '#e0e0e0',
-  textDim: '#8b8d94', green: '#4caf93', greenBg: '#1a2a24', red: '#e0556a',
-  redBg: '#2a1a1e', inputBg: '#282c34',
-};
+import { CustomShiftItem, getCustomShiftItems, getSettings, ShiftSettings } from '../utils/settings';
+import { COLORS } from '../theme';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 
@@ -31,16 +26,22 @@ const buildReportText = (
   goodsTaken: { workerName: string; goodsName: string; quantity: string; price: string }[],
   cashTaken: { workerName: string; amount: string }[],
   fineAmount: string, fineReason: string, isManager: boolean,
-  cleanerAmount: string, transfers: string,
+  cleanerAmount: string, transfers: string, customItems: CustomShiftItem[],
+  customValues: Record<string, string>,
 ) => {
   const expensesText = form.expenses.filter(e => e.name.trim() || e.description.trim()).map(e => `${e.name}: ${e.description}`).join('\n');
   const goodsText = goodsTaken.filter(g => g.workerName.trim() && g.goodsName.trim()).map(g => `${g.workerName}: ${g.goodsName} ×${g.quantity || '0'} = ${formatNum((parseInt(g.quantity) || 0) * (parseInt(g.price) || 0))} ₽`).join('\n');
   const cashText = cashTaken.filter(c => c.workerName.trim() && c.amount.trim()).map(c => `${c.workerName}: ${formatNum(parseInt(c.amount) || 0)} ₽`).join('\n');
   const diffText = calc.difference > 0 ? `Пересдача: +${formatNum(calc.difference)} ₽` : calc.difference < 0 ? `Недосдача: ${formatNum(calc.difference)} ₽` : `0 ₽ (сходится)`;
   const percentLabel = calc.dashTotal > 10000 ? '3%' : '2%';
+  const customText = customItems
+    .filter(item => customValues[item.id]?.trim())
+    .map(item => `${item.label}: ${customValues[item.id].trim()}`)
+    .join('\n');
 
   let text = `Сдача смены\nСотрудник: ${workerName || '—'}\n---\nДэш: ${formatNum(calc.dashTotal)}\nНал: ${formatNum(parseFloat(form.dashCash) || 0)}\nКарта: ${formatNum(parseFloat(form.dashCashless) || 0)}\n---\nФакт: ${formatNum(calc.factTotal)}\nНал: ${formatNum(parseFloat(form.factCash) || 0)}\nКарта: ${formatNum(parseFloat(form.factCashless) || 0)}\nПереводы: ${transfers ? formatNum(parseInt(transfers)) : '0'} ₽\nУборщица: ${cleanerAmount ? formatNum(parseInt(cleanerAmount)) : '0'} ₽\n---\nВзято товарами:\n${goodsText || '—'}\nВзято деньгами:\n${cashText || '—'}\n---\nРасходы (старые):\n${expensesText || '—'}`;
   if (isManager) text += `\n---\nШтраф: ${fineAmount ? formatNum(parseInt(fineAmount)) + ' ₽ — ' + (fineReason || 'Не указана') : 'Нет'}`;
+  if (customText) text += `\n---\nДополнительно:\n${customText}`;
   text += `\n---\n${percentLabel}: ${formatNum(calc.twoPercent)}\n---\n${diffText}`;
   return text;
 };
@@ -62,6 +63,8 @@ export default function ShiftScreen() {
   const [fineAmount, setFineAmount] = useState('');
   const [fineReason, setFineReason] = useState('');
   const [settings, setSettings] = useState<ShiftSettings | null>(null);
+  const [customItems, setCustomItems] = useState<CustomShiftItem[]>([]);
+  const [customValues, setCustomValues] = useState<Record<string, string>>({});
   const [isActiveOperator, setIsActiveOperator] = useState(false);
   const [unpaidFines, setUnpaidFines] = useState<FineRecord[]>([]);
   const [workers, setWorkers] = useState<{ id: string; name: string }[]>([]);
@@ -79,7 +82,7 @@ export default function ShiftScreen() {
 
   useEffect(() => { loadDraft(); loadShiftSettings(); }, []);
   useEffect(() => { if (isFocused) loadShiftSettings(); }, [isFocused]);
-  useEffect(() => { const t = setTimeout(() => saveDraft({ form, workerName, goodsTaken, cashTaken, cleanerAmount, fineAmount, fineReason }), 500); return () => clearTimeout(t); }, [form, workerName, goodsTaken, cashTaken, cleanerAmount, fineAmount, fineReason]);
+  useEffect(() => { const t = setTimeout(() => saveDraft({ form, workerName, goodsTaken, cashTaken, cleanerAmount, fineAmount, fineReason, customValues }), 500); return () => clearTimeout(t); }, [form, workerName, goodsTaken, cashTaken, cleanerAmount, fineAmount, fineReason, customValues]);
   useEffect(() => { if (isLoggedIn && isShellLoggedIn()) { fetchAllData(); setAutoRefresh(true); } }, [isLoggedIn]);
   useEffect(() => {
     if (!autoRefresh || !isShellLoggedIn()) return;
@@ -97,10 +100,15 @@ export default function ShiftScreen() {
       if (d.cleanerAmount) setCleanerAmount(d.cleanerAmount);
       if (d.fineAmount) setFineAmount(d.fineAmount);
       if (d.fineReason) setFineReason(d.fineReason);
+      if (d.customValues) setCustomValues(d.customValues);
     }
   };
 
-  const loadShiftSettings = async () => { const s = await getSettings(); setSettings(s); };
+  const loadShiftSettings = async () => {
+    const [savedSettings, savedCustomItems] = await Promise.all([getSettings(), getCustomShiftItems()]);
+    setSettings(savedSettings);
+    setCustomItems(savedCustomItems);
+  };
 
   const fetchAllData = async () => {
     try {
@@ -166,7 +174,7 @@ export default function ShiftScreen() {
   const handleShare = async () => {
     if (!form.factCash && !form.factCashless) { Alert.alert('Ошибка', 'Заполните Факт'); return; }
     setSending(true); setAutoRefresh(false);
-    const text = buildReportText(form, calc, workerName, goodsTaken, cashTaken, fineAmount, fineReason, isManager(), cleanerAmount, form.transfers || '');
+    const text = buildReportText(form, calc, workerName, goodsTaken, cashTaken, fineAmount, fineReason, isManager(), cleanerAmount, form.transfers || '', customItems, customValues);
     const fe = form.expenses.filter(e => e.name.trim() || e.description.trim());
     const rid = Date.now() * 1000 + Math.floor(Math.random() * 1000);
     const report: SavedReport = {
@@ -189,6 +197,7 @@ export default function ShiftScreen() {
     setForm({ dashCash: '', dashCashless: '', factCash: '', factCashless: '', transfers: '', expenses: [{ id: String(Date.now()), name: '', description: '' }] });
     setPhotoUri(null); setPhotoBase64(null); setGoodsTaken([{ workerName: '', goodsName: '', quantity: '', price: '' }]); setCashTaken([{ workerName: '', amount: '' }]);
     setCleanerAmount(''); setFineAmount(''); setFineReason(''); setSending(false);
+    setCustomValues({});
     setTimeout(() => { setAutoRefresh(true); fetchAllData(); }, 2000);
   };
 
@@ -199,11 +208,16 @@ export default function ShiftScreen() {
 
   return (
     <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+      <View style={styles.pageHeader}>
+        <Text style={styles.eyebrow}>ОТЧЁТ / НОВАЯ СМЕНА</Text>
+        <Text style={styles.pageTitle}>Сдача смены</Text>
+        <Text style={styles.pageSubtitle}>Заполните показатели и проверьте итог перед отправкой.</Text>
+      </View>
       {settings?.showWorker !== false && (
         <View style={styles.card}><Text style={styles.cardTitle}>Сотрудник</Text><TouchableOpacity style={styles.pickerBtn} onPress={() => { setCurrentPickerTarget('worker'); setShowWorkerPicker(true); }}><Text style={[styles.pickerBtnText, !workerName && { color: COLORS.textDim }]}>{workerName || 'Выберите'}</Text><Text style={styles.pickerArrow}>▼</Text></TouchableOpacity></View>
       )}
       {settings?.showDash !== false && (
-        <View style={styles.card}><Text style={styles.cardTitle}>Дэш</Text><View style={styles.row}><View style={styles.field}><Text style={styles.label}>Нал</Text><TextInput style={styles.input} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textDim} value={form.dashCash} onChangeText={v => setForm({ ...form, dashCash: v })} /></View><View style={styles.field}><Text style={styles.label}>Карта</Text><TextInput style={styles.input} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textDim} value={form.dashCashless} onChangeText={v => setForm({ ...form, dashCashless: v })} /></View></View><Text style={styles.totalRow}>Итого: <Text style={styles.totalNum}>{formatNum(calc.dashTotal)} ₽</Text></Text>{!smartShellLoaded && isLoggedIn && <TouchableOpacity style={styles.smartShellBtn} onPress={fetchAllData}><Text style={styles.smartShellBtnText}>📡 Загрузить из SmartShell</Text></TouchableOpacity>}{smartShellLoaded && <View style={styles.loadedBadge}><Text style={styles.loadedBadgeText}>✓ SmartShell</Text></View>}</View>
+        <View style={styles.card}><Text style={styles.cardTitle}>Дэш</Text><View style={styles.row}><View style={styles.field}><Text style={styles.label}>Нал</Text><TextInput style={styles.input} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textDim} value={form.dashCash} onChangeText={v => setForm({ ...form, dashCash: v })} /></View><View style={styles.field}><Text style={styles.label}>Карта</Text><TextInput style={styles.input} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textDim} value={form.dashCashless} onChangeText={v => setForm({ ...form, dashCashless: v })} /></View></View><Text style={styles.totalRow}>Итого: <Text style={styles.totalNum}>{formatNum(calc.dashTotal)} ₽</Text></Text>{!smartShellLoaded && isLoggedIn && <TouchableOpacity style={styles.smartShellBtn} onPress={fetchAllData}><Text style={styles.smartShellBtnText}>Загрузить из SmartShell</Text></TouchableOpacity>}{smartShellLoaded && <View style={styles.loadedBadge}><Text style={styles.loadedBadgeText}>SmartShell подключён</Text></View>}</View>
       )}
       {isManager() && !isActiveOperator && (
         <View style={styles.card}><Text style={styles.cardTitle}>Выписать штраф</Text><View style={styles.row}><View style={styles.field}><Text style={styles.label}>Сумма</Text><TextInput style={styles.input} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textDim} value={fineAmount} onChangeText={setFineAmount} /></View><View style={styles.field}><Text style={styles.label}>Причина</Text><TextInput style={styles.input} placeholder="За что" placeholderTextColor={COLORS.textDim} value={fineReason} onChangeText={setFineReason} /></View></View><TouchableOpacity style={[styles.shareBtn, { marginTop: 12 }]} onPress={handleIssueFine}><Text style={styles.shareBtnText}>Выписать штраф</Text></TouchableOpacity>{unpaidFines.length > 0 && (<View style={styles.finesList}><Text style={styles.finesTitle}>Неоплаченные штрафы:</Text>{unpaidFines.map(f => (<View key={f.id} style={styles.fineRow}><Text style={styles.fineText}>{new Date(f.date).toLocaleDateString('ru-RU')} | {formatNum(f.amount)} ₽ | {f.reason}</Text></View>))}<View style={styles.fineTotal}><Text style={styles.fineTotalText}>Итого: {formatNum(unpaidFines.reduce((s, f) => s + f.amount, 0))} ₽</Text></View></View>)}</View>
@@ -228,6 +242,27 @@ export default function ShiftScreen() {
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Уборщица</Text>
               <TextInput style={styles.input} keyboardType="numeric" placeholder="Сумма" placeholderTextColor={COLORS.textDim} value={cleanerAmount} onChangeText={setCleanerAmount} />
+            </View>
+          )}
+
+          {customItems.length > 0 && (
+            <View style={styles.card}>
+              <View style={styles.customHeader}>
+                <Text style={styles.cardTitle}>Дополнительные пункты</Text>
+                <Text style={styles.customCount}>{String(customItems.length).padStart(2, '0')}</Text>
+              </View>
+              {customItems.map((item, index) => (
+                <View key={item.id} style={index > 0 ? styles.customFieldSpacing : undefined}>
+                  <Text style={styles.label}>{item.label}</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Введите значение"
+                    placeholderTextColor={COLORS.textDim}
+                    value={customValues[item.id] || ''}
+                    onChangeText={value => setCustomValues(current => ({ ...current, [item.id]: value }))}
+                  />
+                </View>
+              ))}
             </View>
           )}
 
@@ -257,7 +292,7 @@ export default function ShiftScreen() {
           {settings?.showOtherExpenses !== false && (
             <View style={styles.card}><Text style={styles.cardTitle}>Прочие расходы</Text>
               {form.expenses.map((exp, i) => { const last = i === form.expenses.length - 1; const has = exp.name.trim() || exp.description.trim(); return (<View key={exp.id} style={styles.expenseRow}><View style={styles.expenseName}><TextInput style={styles.input} placeholder="Имя" placeholderTextColor={COLORS.textDim} value={exp.name} onChangeText={v => updateExpense(exp.id, 'name', v)} /></View><View style={styles.expenseDesc}><TextInput style={styles.input} placeholder="2к, 1 френч..." placeholderTextColor={COLORS.textDim} value={exp.description} onChangeText={v => updateExpense(exp.id, 'description', v)} /></View>{(!last || !has) ? <TouchableOpacity style={styles.removeBtn} onPress={() => removeExpense(exp.id)}><Text style={styles.removeBtnText}>✕</Text></TouchableOpacity> : <View style={styles.removeBtn} />}</View>); })}
-              {settings?.showPhoto !== false && (<View style={styles.photoSection}><TouchableOpacity style={styles.photoBtn} onPress={showPhotoOptions}><Text style={styles.photoBtnText}>{photoUri ? '📸 Заменить' : '📷 Чек'}</Text></TouchableOpacity>{photoUri && <View style={styles.photoPreview}><Image source={{ uri: photoUri }} style={styles.photoImage} /><TouchableOpacity style={styles.photoRemove} onPress={() => { setPhotoUri(null); setPhotoBase64(null); }}><Text style={styles.photoRemoveText}>✕ Удалить</Text></TouchableOpacity></View>}</View>)}
+              {settings?.showPhoto !== false && (<View style={styles.photoSection}><TouchableOpacity style={styles.photoBtn} onPress={showPhotoOptions}><Text style={styles.photoBtnText}>{photoUri ? 'Заменить фото' : 'Добавить фото чека'}</Text></TouchableOpacity>{photoUri && <View style={styles.photoPreview}><Image source={{ uri: photoUri }} style={styles.photoImage} /><TouchableOpacity style={styles.photoRemove} onPress={() => { setPhotoUri(null); setPhotoBase64(null); }}><Text style={styles.photoRemoveText}>Удалить фото</Text></TouchableOpacity></View>}</View>)}
             </View>
           )}
           <View style={[styles.resultCard, { backgroundColor: diffBg, borderColor: diffColor }]}><View style={styles.resultRow}><Text style={styles.resultLabel}>{pctLabel} от Факта</Text><Text style={styles.resultValue}>{formatNum(calc.twoPercent)} ₽</Text></View><View style={[styles.divider, { backgroundColor: diffColor }]} /><View style={styles.resultRow}><Text style={styles.resultLabel}>{diffLabel.split(':')[0]}</Text><Text style={[styles.resultValue, { color: diffColor }]}>{diffLabel.split(': ')[1] || diffLabel}</Text></View></View>
@@ -272,23 +307,27 @@ export default function ShiftScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg, padding: 16 },
-  card: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border },
-  cardTitle: { color: COLORS.text, fontSize: 15, fontWeight: '600', marginBottom: 12 },
+  container: { flex: 1, backgroundColor: COLORS.bg, padding: 18 },
+  pageHeader: { paddingVertical: 16, marginBottom: 10 },
+  eyebrow: { color: COLORS.green, fontSize: 10, fontWeight: '800', letterSpacing: 2, marginBottom: 9 },
+  pageTitle: { color: COLORS.text, fontSize: 30, lineHeight: 36, fontWeight: '800', letterSpacing: -0.8 },
+  pageSubtitle: { color: COLORS.textDim, fontSize: 13, lineHeight: 19, marginTop: 7 },
+  card: { backgroundColor: COLORS.card, borderRadius: 0, padding: 18, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border },
+  cardTitle: { color: COLORS.text, fontSize: 14, fontWeight: '700', marginBottom: 14, letterSpacing: 0.2 },
   row: { flexDirection: 'row', gap: 12 },
   field: { flex: 1 },
   label: { color: COLORS.textDim, fontSize: 13, marginBottom: 6 },
-  input: { backgroundColor: COLORS.inputBg, borderRadius: 8, padding: 12, color: COLORS.text, fontSize: 16, borderWidth: 1, borderColor: COLORS.border },
+  input: { backgroundColor: COLORS.inputBg, borderRadius: 0, padding: 12, color: COLORS.text, fontSize: 16, borderWidth: 1, borderColor: COLORS.borderStrong },
   totalRow: { color: COLORS.textDim, fontSize: 14, marginTop: 12 },
   totalNum: { color: COLORS.text, fontWeight: '600' },
-  smartShellBtn: { marginTop: 12, backgroundColor: '#1a3a2a', borderWidth: 1, borderColor: COLORS.green, borderRadius: 8, padding: 10, alignItems: 'center' },
+  smartShellBtn: { marginTop: 12, backgroundColor: '#1a3a2a', borderWidth: 1, borderColor: COLORS.green, borderRadius: 0, padding: 10, alignItems: 'center' },
   smartShellBtnText: { color: COLORS.green, fontSize: 13, fontWeight: '600' },
-  loadedBadge: { marginTop: 10, backgroundColor: COLORS.greenBg, borderRadius: 6, paddingVertical: 4, paddingHorizontal: 10, alignSelf: 'flex-start' },
+  loadedBadge: { marginTop: 10, backgroundColor: COLORS.greenBg, borderRadius: 0, paddingVertical: 4, paddingHorizontal: 10, alignSelf: 'flex-start' },
   loadedBadgeText: { color: COLORS.green, fontSize: 11, fontWeight: '700' },
-  pickerBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.inputBg, borderRadius: 8, padding: 12, borderWidth: 1, borderColor: COLORS.border },
+  pickerBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.inputBg, borderRadius: 0, padding: 12, borderWidth: 1, borderColor: COLORS.borderStrong },
   pickerBtnText: { color: COLORS.text, fontSize: 16, flex: 1 },
   pickerArrow: { color: COLORS.textDim, fontSize: 12 },
-  pickerField: { flex: 2, backgroundColor: COLORS.inputBg, borderRadius: 8, padding: 12, borderWidth: 1, borderColor: COLORS.border },
+  pickerField: { flex: 2, backgroundColor: COLORS.inputBg, borderRadius: 0, padding: 12, borderWidth: 1, borderColor: COLORS.borderStrong },
   pickerText: { color: COLORS.text, fontSize: 14 },
   goodsRow: { flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' },
   expenseRow: { flexDirection: 'row', gap: 8, marginBottom: 8, alignItems: 'center' },
@@ -296,20 +335,23 @@ const styles = StyleSheet.create({
   priceText: { color: COLORS.textDim, fontSize: 14, paddingVertical: 12, textAlign: 'right' },
   removeBtn: { width: 28, height: 28, justifyContent: 'center', alignItems: 'center' },
   removeBtnText: { color: COLORS.red, fontSize: 16 },
-  addBtn: { marginTop: 8, backgroundColor: COLORS.inputBg, borderWidth: 1, borderColor: COLORS.border, borderStyle: 'dashed', borderRadius: 8, padding: 12, alignItems: 'center' },
+  addBtn: { marginTop: 8, backgroundColor: COLORS.inputBg, borderWidth: 1, borderColor: COLORS.borderStrong, borderStyle: 'dashed', borderRadius: 0, padding: 12, alignItems: 'center' },
   addBtnText: { color: COLORS.green, fontSize: 13 },
   photoSection: { marginTop: 16, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 12 },
-  photoBtn: { backgroundColor: COLORS.inputBg, borderWidth: 1, borderColor: COLORS.border, borderStyle: 'dashed', borderRadius: 8, padding: 14, alignItems: 'center' },
+  photoBtn: { backgroundColor: COLORS.inputBg, borderWidth: 1, borderColor: COLORS.border, borderStyle: 'dashed', borderRadius: 0, padding: 14, alignItems: 'center' },
   photoBtnText: { color: COLORS.green, fontSize: 14 },
-  photoPreview: { marginTop: 10 }, photoImage: { width: '100%', height: 200, borderRadius: 8, resizeMode: 'cover' },
+  photoPreview: { marginTop: 10 }, photoImage: { width: '100%', height: 200, borderRadius: 0, resizeMode: 'cover' },
   photoRemove: { marginTop: 8, alignItems: 'center' }, photoRemoveText: { color: COLORS.red, fontSize: 13 },
-  resultCard: { borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1 },
+  resultCard: { borderRadius: 0, padding: 16, marginBottom: 16, borderWidth: 1 },
   resultRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
   resultLabel: { color: COLORS.textDim, fontSize: 15 }, resultValue: { color: COLORS.text, fontSize: 20, fontWeight: '700' },
   divider: { height: 1, marginVertical: 8, opacity: 0.3 },
-  shareBtn: { backgroundColor: COLORS.green, borderRadius: 12, padding: 16, alignItems: 'center' },
-  shareBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  finesList: { marginTop: 16, backgroundColor: COLORS.redBg, borderRadius: 8, padding: 12, borderWidth: 1, borderColor: COLORS.red },
+  customHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  customCount: { color: COLORS.green, fontSize: 11, fontWeight: '800', marginBottom: 14 },
+  customFieldSpacing: { marginTop: 14 },
+  shareBtn: { backgroundColor: COLORS.green, borderRadius: 0, padding: 17, alignItems: 'center' },
+  shareBtnText: { color: COLORS.bg, fontSize: 15, fontWeight: '800', letterSpacing: 0.3 },
+  finesList: { marginTop: 16, backgroundColor: COLORS.redBg, borderRadius: 0, padding: 12, borderWidth: 1, borderColor: COLORS.red },
   finesTitle: { color: COLORS.red, fontSize: 13, fontWeight: '700', marginBottom: 8 },
   fineRow: { paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   fineText: { color: COLORS.textDim, fontSize: 12 },

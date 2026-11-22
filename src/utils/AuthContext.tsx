@@ -5,12 +5,7 @@ import {
 } from 'react-native';
 import { loginToSmartShell, logoutFromSmartShell, getDetailedWorkers, getUserRole, getGoodsLogs } from './smartshell';
 import { getCredentials, saveCredentials, removeCredentials, syncWorkersToSupabase, getHistory } from './storage';
-
-const COLORS = {
-  bg: '#1a1d23', card: '#21242b', border: '#2a2d35', text: '#e0e0e0',
-  textDim: '#8b8d94', green: '#4caf93', inputBg: '#282c34', red: '#e0556a',
-  yellow: '#f0c040',
-};
+import { COLORS } from '../theme';
 
 interface AuthContextType {
   isLoggedIn: boolean;
@@ -217,7 +212,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 {loginStats.unmatchedGoods.length > 0 && (
                   <View style={styles.warningBox}>
                     <Text style={styles.warningText}>
-                      ⚠️ Товары не найдены в логах списания: {loginStats.unmatchedGoods.join(', ')}
+                      Товары не найдены в логах списания: {loginStats.unmatchedGoods.join(', ')}
                     </Text>
                   </View>
                 )}
@@ -236,15 +231,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
-  modalCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 24, width: '88%', maxWidth: 400, borderWidth: 1, borderColor: COLORS.border },
+  modalCard: { backgroundColor: COLORS.card, borderRadius: 0, padding: 24, width: '88%', maxWidth: 400, borderWidth: 1, borderColor: COLORS.border },
   modalTitle: { color: COLORS.text, fontSize: 22, fontWeight: '700', marginBottom: 6, textAlign: 'center' },
   modalSubtitle: { color: COLORS.textDim, fontSize: 13, marginBottom: 20, textAlign: 'center' },
   modalLabel: { color: COLORS.textDim, fontSize: 14, marginBottom: 8 },
-  modalInput: { backgroundColor: COLORS.inputBg, borderRadius: 10, padding: 14, color: COLORS.text, fontSize: 16, borderWidth: 1, borderColor: COLORS.border, marginBottom: 16 },
+  modalInput: { backgroundColor: COLORS.inputBg, borderRadius: 0, padding: 14, color: COLORS.text, fontSize: 16, borderWidth: 1, borderColor: COLORS.border, marginBottom: 16 },
   errorText: { color: COLORS.red, fontSize: 13, textAlign: 'center', marginBottom: 12 },
-  modalOkBtn: { padding: 14, borderRadius: 10, backgroundColor: COLORS.green, alignItems: 'center' },
-  modalOkText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  statsCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 24, width: '88%', maxWidth: 400, maxHeight: '80%', borderWidth: 1, borderColor: COLORS.border },
+  modalOkBtn: { padding: 14, borderRadius: 0, backgroundColor: COLORS.green, alignItems: 'center' },
+  modalOkText: { color: COLORS.bg, fontSize: 16, fontWeight: '800' },
+  statsCard: { backgroundColor: COLORS.card, borderRadius: 0, padding: 24, width: '88%', maxWidth: 400, maxHeight: '80%', borderWidth: 1, borderColor: COLORS.border },
   statsTitle: { color: COLORS.text, fontSize: 20, fontWeight: '700', marginBottom: 16, textAlign: 'center' },
   statsScroll: { maxHeight: 400 },
   statsSubtitle: { color: COLORS.text, fontSize: 14, fontWeight: '600', marginTop: 12, marginBottom: 8 },
@@ -253,8 +248,8 @@ const styles = StyleSheet.create({
   statValue: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   goodsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4, paddingLeft: 12 },
   goodsName: { color: COLORS.textDim, fontSize: 13 },
-  warningBox: { backgroundColor: COLORS.red + '20', borderRadius: 8, padding: 12, marginTop: 12 },
+  warningBox: { backgroundColor: COLORS.red + '20', borderRadius: 0, padding: 12, marginTop: 12 },
   warningText: { color: COLORS.red, fontSize: 12 },
-  statsCloseBtn: { marginTop: 16, padding: 12, borderRadius: 10, backgroundColor: COLORS.inputBg, alignItems: 'center' },
+  statsCloseBtn: { marginTop: 16, padding: 12, borderRadius: 0, backgroundColor: COLORS.inputBg, alignItems: 'center' },
   statsCloseText: { color: COLORS.textDim, fontSize: 14, fontWeight: '600' },
 });

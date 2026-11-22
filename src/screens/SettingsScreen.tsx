@@ -1,104 +1,206 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, Switch, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { supabase } from '../utils/supabase';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, Text,
+  TextInput, TouchableOpacity, View,
+} from 'react-native';
+import { COLORS } from '../theme';
+import {
+  CustomShiftItem, ShiftSettings, defaultSettings, getCustomShiftItems,
+  getSettings, saveCustomShiftItems, saveSettings,
+} from '../utils/settings';
 
-const COLORS = {
-  bg: '#1a1d23', card: '#21242b', border: '#2a2d35', text: '#e0e0e0', textDim: '#8b8d94', green: '#4caf93',
-};
-
-export interface ShiftSettings {
-  showWorker: boolean; showDash: boolean; showFact: boolean;
-  showGoodsTaken: boolean; showCashTaken: boolean; showFine: boolean;
-  showOtherExpenses: boolean; showPhoto: boolean; showCleaner: boolean;
-}
-
-const defaultSettings: ShiftSettings = {
-  showWorker: true, showDash: true, showFact: true,
-  showGoodsTaken: true, showCashTaken: true, showFine: true,
-  showOtherExpenses: true, showPhoto: true, showCleaner: true,  
-};
-
-export const getSettings = async (): Promise<ShiftSettings> => {
-  try {
-    const data = await supabase.select('settings', 'select=*&id=eq.1');
-    if (data && data.length > 0) {
-      const s = data[0];
-      return {
-        showWorker: s.show_worker ?? true, showDash: s.show_dash ?? true, showFact: s.show_fact ?? true,
-        showGoodsTaken: s.show_goods_taken ?? true, showCashTaken: s.show_cash_taken ?? true, showFine: s.show_fine ?? true,
-        showOtherExpenses: s.show_other_expenses ?? true, showPhoto: s.show_photo ?? true, showCleaner: s.show_cleaner ?? true,
-      };
-    }
-  } catch (e) {}
-  return defaultSettings;
-};
-
-export const saveSettings = async (settings: ShiftSettings): Promise<void> => {
-  try {
-    await supabase.upsert('settings', {
-      id: 1,
-      show_worker: settings.showWorker, show_dash: settings.showDash, show_fact: settings.showFact,
-      show_goods_taken: settings.showGoodsTaken, show_cash_taken: settings.showCashTaken, show_fine: settings.showFine,
-      show_other_expenses: settings.showOtherExpenses, show_photo: settings.showPhoto,
-      updated_at: new Date().toISOString(),
-    });
-  } catch (e) {}
-};
+const visibilityItems: { key: keyof ShiftSettings; label: string }[] = [
+  { key: 'showWorker', label: 'Сотрудник' },
+  { key: 'showDash', label: 'Дэш / терминал' },
+  { key: 'showFact', label: 'Фактическая касса' },
+  { key: 'showGoodsTaken', label: 'Товары под зарплату' },
+  { key: 'showCashTaken', label: 'Деньги из кассы' },
+  { key: 'showFine', label: 'Штраф' },
+  { key: 'showOtherExpenses', label: 'Прочие расходы' },
+  { key: 'showPhoto', label: 'Фото чека' },
+  { key: 'showCleaner', label: 'Уборщица' },
+];
 
 export default function SettingsScreen() {
   const [settings, setSettings] = useState<ShiftSettings>(defaultSettings);
+  const [customItems, setCustomItems] = useState<CustomShiftItem[]>([]);
+  const [newItemLabel, setNewItemLabel] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { loadSettings(); }, []);
+  useEffect(() => {
+    Promise.all([getSettings(), getCustomShiftItems()])
+      .then(([savedSettings, savedItems]) => {
+        setSettings(savedSettings);
+        setCustomItems(savedItems);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
-  const loadSettings = async () => { setLoading(true); const s = await getSettings(); setSettings(s); setLoading(false); };
   const toggle = async (key: keyof ShiftSettings) => {
     const updated = { ...settings, [key]: !settings[key] };
-    setSettings(updated); setSaving(true); await saveSettings(updated); setSaving(false);
+    setSettings(updated);
+    setSaving(true);
+    await saveSettings(updated);
+    setSaving(false);
   };
 
-  const items: { key: keyof ShiftSettings; label: string }[] = [
-    { key: 'showWorker', label: 'Сотрудник' }, { key: 'showDash', label: 'Дэш (Терминал)' },
-    { key: 'showFact', label: 'Факт' }, { key: 'showGoodsTaken', label: 'Взято товарами под зарплату' },
-    { key: 'showCashTaken', label: 'Взято деньгами из кассы' }, { key: 'showFine', label: 'Штраф' },
-    { key: 'showOtherExpenses', label: 'Прочие расходы' }, { key: 'showPhoto', label: 'Фото чека' },
-    { key: 'showCleaner', label: 'Уборщица' },
-  ];
+  const addCustomItem = async () => {
+    const label = newItemLabel.trim();
+    if (!label) {
+      Alert.alert('Введите название', 'Например: Комментарий администратора');
+      return;
+    }
+    if (customItems.some(item => item.label.toLowerCase() === label.toLowerCase())) {
+      Alert.alert('Такой пункт уже есть');
+      return;
+    }
+    const updated = [...customItems, { id: `${Date.now()}`, label }];
+    setCustomItems(updated);
+    setNewItemLabel('');
+    await saveCustomShiftItems(updated);
+  };
 
-  if (loading) return <View style={styles.loading}><ActivityIndicator size="large" color={COLORS.green} /><Text style={styles.loadingText}>Загрузка настроек...</Text></View>;
+  const removeCustomItem = async (id: string) => {
+    const updated = customItems.filter(item => item.id !== id);
+    setCustomItems(updated);
+    await saveCustomShiftItems(updated);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={COLORS.green} />
+        <Text style={styles.loadingText}>Загружаем настройки</Text>
+      </View>
+    );
+  }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Настройки отображения</Text>
-      <Text style={styles.subtitle}>Выберите, какие блоки показывать при сдаче смены</Text>
-      {saving && <View style={styles.savingBanner}><Text style={styles.savingText}>Сохранение...</Text></View>}
-      {items.map((item) => (
-        <View key={item.key} style={styles.row}>
-          <Text style={styles.label}>{item.label}</Text>
-          <Switch value={settings[item.key]} onValueChange={() => toggle(item.key)} trackColor={{ false: COLORS.border, true: COLORS.green }} thumbColor={settings[item.key] ? '#fff' : '#888'} />
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <View style={styles.hero}>
+        <Text style={styles.eyebrow}>КОНФИГУРАЦИЯ</Text>
+        <Text style={styles.title}>Настройки смены</Text>
+        <Text style={styles.subtitle}>Настройте состав формы под рабочий процесс команды.</Text>
+      </View>
+
+      {saving && <Text style={styles.savingText}>Изменения сохраняются</Text>}
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionIndex}>01</Text>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>Стандартные блоки</Text>
+            <Text style={styles.sectionDescription}>Показывать в форме сдачи смены</Text>
+          </View>
         </View>
-      ))}
-      <TouchableOpacity style={styles.resetBtn} onPress={() => {
-        Alert.alert('Сброс', 'Вернуть все настройки по умолчанию?', [
+        {visibilityItems.map((item, index) => (
+          <View key={item.key} style={[styles.row, index === visibilityItems.length - 1 && styles.rowLast]}>
+            <Text style={styles.label}>{item.label}</Text>
+            <Switch
+              value={settings[item.key]}
+              onValueChange={() => toggle(item.key)}
+              trackColor={{ false: COLORS.border, true: COLORS.greenStrong }}
+              thumbColor={settings[item.key] ? COLORS.text : COLORS.textDim}
+            />
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionIndex}>02</Text>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>Свои пункты</Text>
+            <Text style={styles.sectionDescription}>Текстовые поля для дополнительной информации</Text>
+          </View>
+        </View>
+
+        <View style={styles.addRow}>
+          <TextInput
+            style={styles.input}
+            value={newItemLabel}
+            onChangeText={setNewItemLabel}
+            onSubmitEditing={addCustomItem}
+            placeholder="Название нового пункта"
+            placeholderTextColor={COLORS.textDim}
+            returnKeyType="done"
+          />
+          <TouchableOpacity style={styles.addButton} onPress={addCustomItem}>
+            <Text style={styles.addButtonText}>Добавить</Text>
+          </TouchableOpacity>
+        </View>
+
+        {customItems.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>Пунктов пока нет</Text>
+            <Text style={styles.emptyText}>Добавленные поля появятся в форме «Сдача смены».</Text>
+          </View>
+        ) : (
+          customItems.map((item, index) => (
+            <View key={item.id} style={[styles.customRow, index === customItems.length - 1 && styles.rowLast]}>
+              <View style={styles.customNumber}><Text style={styles.customNumberText}>{String(index + 1).padStart(2, '0')}</Text></View>
+              <Text style={styles.customLabel}>{item.label}</Text>
+              <TouchableOpacity style={styles.removeButton} onPress={() => removeCustomItem(item.id)}>
+                <Text style={styles.removeButtonText}>Удалить</Text>
+              </TouchableOpacity>
+            </View>
+          ))
+        )}
+      </View>
+
+      <TouchableOpacity
+        style={styles.resetButton}
+        onPress={() => Alert.alert('Сбросить настройки?', 'Все стандартные блоки снова будут включены.', [
           { text: 'Отмена', style: 'cancel' },
-          { text: 'Сбросить', onPress: async () => { setSettings(defaultSettings); await saveSettings(defaultSettings); } },
-        ]);
-      }}><Text style={styles.resetText}>Сбросить настройки</Text></TouchableOpacity>
+          {
+            text: 'Сбросить',
+            style: 'destructive',
+            onPress: async () => {
+              setSettings(defaultSettings);
+              await saveSettings(defaultSettings);
+            },
+          },
+        ])}
+      >
+        <Text style={styles.resetButtonText}>Сбросить стандартные настройки</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg, padding: 16 },
-  title: { color: COLORS.text, fontSize: 22, fontWeight: '700', marginBottom: 8 },
-  subtitle: { color: COLORS.textDim, fontSize: 13, marginBottom: 20 },
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  content: { padding: 20, paddingBottom: 48 },
   loading: { flex: 1, backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: COLORS.textDim, fontSize: 14, marginTop: 12 },
-  savingBanner: { backgroundColor: COLORS.green + '30', borderRadius: 6, padding: 8, marginBottom: 12, alignItems: 'center' },
-  savingText: { color: COLORS.green, fontSize: 12 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 10, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border },
-  label: { color: COLORS.text, fontSize: 15, flex: 1 },
-  resetBtn: { marginTop: 20, backgroundColor: COLORS.card, borderRadius: 10, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
-  resetText: { color: COLORS.textDim, fontSize: 14 },
+  loadingText: { color: COLORS.textDim, fontSize: 13, marginTop: 12 },
+  hero: { paddingVertical: 18, marginBottom: 20 },
+  eyebrow: { color: COLORS.green, fontSize: 11, fontWeight: '800', letterSpacing: 2.2, marginBottom: 10 },
+  title: { color: COLORS.text, fontSize: 30, lineHeight: 36, fontWeight: '800', letterSpacing: -0.8 },
+  subtitle: { color: COLORS.textDim, fontSize: 14, lineHeight: 21, maxWidth: 440, marginTop: 8 },
+  savingText: { color: COLORS.green, fontSize: 12, marginBottom: 12 },
+  section: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, marginBottom: 16 },
+  sectionHeader: { flexDirection: 'row', padding: 18, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  sectionIndex: { color: COLORS.green, fontSize: 11, fontWeight: '800', marginRight: 14, paddingTop: 3 },
+  sectionHeading: { flex: 1 },
+  sectionTitle: { color: COLORS.text, fontSize: 17, fontWeight: '700' },
+  sectionDescription: { color: COLORS.textDim, fontSize: 12, lineHeight: 18, marginTop: 3 },
+  row: { minHeight: 58, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  rowLast: { borderBottomWidth: 0 },
+  label: { color: COLORS.text, fontSize: 14, flex: 1 },
+  addRow: { flexDirection: 'row', gap: 8, padding: 18, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  input: { flex: 1, minHeight: 46, backgroundColor: COLORS.inputBg, borderWidth: 1, borderColor: COLORS.borderStrong, color: COLORS.text, paddingHorizontal: 14, fontSize: 14 },
+  addButton: { minHeight: 46, justifyContent: 'center', backgroundColor: COLORS.green, paddingHorizontal: 18 },
+  addButtonText: { color: COLORS.bg, fontSize: 13, fontWeight: '800' },
+  emptyState: { padding: 24 },
+  emptyTitle: { color: COLORS.text, fontSize: 14, fontWeight: '700' },
+  emptyText: { color: COLORS.textDim, fontSize: 12, lineHeight: 18, marginTop: 5 },
+  customRow: { minHeight: 62, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  customNumber: { width: 30 },
+  customNumberText: { color: COLORS.green, fontSize: 11, fontWeight: '800' },
+  customLabel: { flex: 1, color: COLORS.text, fontSize: 14 },
+  removeButton: { paddingVertical: 8, paddingLeft: 16 },
+  removeButtonText: { color: COLORS.red, fontSize: 12, fontWeight: '700' },
+  resetButton: { borderWidth: 1, borderColor: COLORS.border, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  resetButtonText: { color: COLORS.textDim, fontSize: 13, fontWeight: '600' },
 });

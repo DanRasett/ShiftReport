@@ -9,12 +9,7 @@ import { getUnpaidReports, markSalaryPaid, getAllUnpaidFines, getWorkersWithSett
 import { getUserRole, loginToSmartShell } from '../utils/smartshell';
 import { getCredentials } from '../utils/storage';
 import { exportSalaryToExcel } from '../utils/export';
-
-const COLORS = {
-  bg: '#1a1d23', card: '#21242b', border: '#2a2d35', text: '#e0e0e0',
-  textDim: '#8b8d94', green: '#4caf93', greenBg: '#1a2a24', red: '#e0556a',
-  redBg: '#2a1a1e', inputBg: '#282c34',
-};
+import { COLORS } from '../theme';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 
@@ -286,7 +281,7 @@ export default function SalaryScreen() {
                   </Text>
                 </View>
               )}
-  
+
 
 
               {/* Взято товарами — с детализацией */}
@@ -413,15 +408,15 @@ const styles = StyleSheet.create({
   center: { flex: 1, backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center' },
   loadingText: { color: COLORS.textDim, fontSize: 14, marginTop: 12 },
   title: { color: COLORS.text, fontSize: 22, fontWeight: '700', marginBottom: 16 },
-  card: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border },
+  card: { backgroundColor: COLORS.card, borderRadius: 0, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border },
   cardTitle: { color: COLORS.text, fontSize: 16, fontWeight: '600', marginBottom: 12 },
   dateRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
   dateField: { flex: 1 },
   label: { color: COLORS.textDim, fontSize: 13, marginBottom: 6 },
-  input: { backgroundColor: COLORS.inputBg, borderRadius: 8, padding: 12, color: COLORS.text, fontSize: 16, borderWidth: 1, borderColor: COLORS.border },
-  calcBtn: { backgroundColor: COLORS.green, borderRadius: 10, padding: 14, alignItems: 'center' },
-  calcBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  workerCard: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border },
+  input: { backgroundColor: COLORS.inputBg, borderRadius: 0, padding: 12, color: COLORS.text, fontSize: 16, borderWidth: 1, borderColor: COLORS.border },
+  calcBtn: { backgroundColor: COLORS.green, borderRadius: 0, padding: 14, alignItems: 'center' },
+  calcBtnText: { color: COLORS.bg, fontSize: 15, fontWeight: '800' },
+  workerCard: { backgroundColor: COLORS.card, borderRadius: 0, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border },
   workerName: { color: COLORS.text, fontSize: 18, fontWeight: '700', marginBottom: 4 },
   shiftCount: { color: COLORS.textDim, fontSize: 13, marginBottom: 8 },
   shiftsBlock: { marginBottom: 8 },
@@ -437,9 +432,9 @@ const styles = StyleSheet.create({
   totalDivider: { height: 2, backgroundColor: COLORS.green, marginVertical: 8 },
   salaryTotalLabel: { color: COLORS.text, fontSize: 16, fontWeight: '700', flex: 1 },
   salaryTotalValue: { fontSize: 22, fontWeight: '700' },
-  payBtn: { backgroundColor: '#1a3a2a', borderWidth: 2, borderColor: COLORS.green, borderRadius: 14, padding: 18, alignItems: 'center', marginVertical: 16 },
+  payBtn: { backgroundColor: '#1a3a2a', borderWidth: 2, borderColor: COLORS.green, borderRadius: 0, padding: 18, alignItems: 'center', marginVertical: 16 },
   payBtnText: { color: COLORS.green, fontSize: 18, fontWeight: '700' },
-  summaryCard: { backgroundColor: COLORS.greenBg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: COLORS.green, marginTop: 8 },
+  summaryCard: { backgroundColor: COLORS.greenBg, borderRadius: 0, padding: 16, borderWidth: 1, borderColor: COLORS.green, marginTop: 8 },
   summaryTitle: { color: COLORS.green, fontSize: 17, fontWeight: '700', marginBottom: 10 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
   summaryLabel: { color: COLORS.text, fontSize: 14 },
@@ -452,7 +447,7 @@ const styles = StyleSheet.create({
   backgroundColor: COLORS.card,
   borderWidth: 1,
   borderColor: COLORS.green,
-  borderRadius: 14,
+  borderRadius: 0,
   padding: 16,
   alignItems: 'center',
   marginBottom: 16,

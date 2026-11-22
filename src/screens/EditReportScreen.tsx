@@ -9,11 +9,7 @@ import { getGoodsWithPrices } from '../utils/smartshell';
 import { SavedReport } from '../types';
 import { calculateShift } from '../utils/calculations';
 import PickerModal from '../components/PickerModal';
-
-const COLORS = {
-  bg: '#1a1d23', card: '#21242b', border: '#2a2d35', text: '#e0e0e0',
-  textDim: '#8b8d94', green: '#4caf93', inputBg: '#282c34', red: '#e0556a',
-};
+import { COLORS } from '../theme';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 
@@ -266,22 +262,22 @@ const styles = StyleSheet.create({
   errorText: { color: COLORS.red, fontSize: 16 },
   title: { color: COLORS.text, fontSize: 22, fontWeight: '700', marginBottom: 4 },
   subtitle: { color: COLORS.textDim, fontSize: 14, marginBottom: 16 },
-  card: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border },
+  card: { backgroundColor: COLORS.card, borderRadius: 0, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border },
   cardTitle: { color: COLORS.text, fontSize: 15, fontWeight: '600', marginBottom: 12 },
   row: { flexDirection: 'row', gap: 12 },
   field: { flex: 1 },
   label: { color: COLORS.textDim, fontSize: 13, marginBottom: 6 },
   value: { color: COLORS.text, fontSize: 16, padding: 12 },
-  input: { backgroundColor: COLORS.inputBg, borderRadius: 8, padding: 12, color: COLORS.text, fontSize: 16, borderWidth: 1, borderColor: COLORS.border },
-  pickerField: { flex: 2, backgroundColor: COLORS.inputBg, borderRadius: 8, padding: 12, borderWidth: 1, borderColor: COLORS.border },
+  input: { backgroundColor: COLORS.inputBg, borderRadius: 0, padding: 12, color: COLORS.text, fontSize: 16, borderWidth: 1, borderColor: COLORS.border },
+  pickerField: { flex: 2, backgroundColor: COLORS.inputBg, borderRadius: 0, padding: 12, borderWidth: 1, borderColor: COLORS.border },
   pickerText: { color: COLORS.text, fontSize: 14 },
   goodsRow: { flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' },
   expenseRow: { flexDirection: 'row', gap: 8, marginBottom: 8, alignItems: 'center' },
   expenseSmall: { flex: 1 },
   removeBtn: { width: 28, height: 28, justifyContent: 'center', alignItems: 'center' },
   removeBtnText: { color: COLORS.red, fontSize: 16 },
-  addBtn: { marginTop: 8, backgroundColor: COLORS.inputBg, borderWidth: 1, borderColor: COLORS.border, borderStyle: 'dashed', borderRadius: 8, padding: 12, alignItems: 'center' },
+  addBtn: { marginTop: 8, backgroundColor: COLORS.inputBg, borderWidth: 1, borderColor: COLORS.border, borderStyle: 'dashed', borderRadius: 0, padding: 12, alignItems: 'center' },
   addBtnText: { color: COLORS.green, fontSize: 13 },
-  saveBtn: { backgroundColor: COLORS.green, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  saveBtn: { backgroundColor: COLORS.green, borderRadius: 0, padding: 16, alignItems: 'center', marginTop: 8 },
+  saveBtnText: { color: COLORS.bg, fontSize: 16, fontWeight: '800' },
 });

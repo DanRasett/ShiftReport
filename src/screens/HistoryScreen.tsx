@@ -6,17 +6,7 @@ import { SavedReport } from '../types';
 import { getHistory, deleteReport } from '../utils/storage';
 import { exportHistoryToExcel, getReportText } from '../utils/export';
 import { useAuth } from '../utils/AuthContext';
-
-const COLORS = {
-  bg: '#1a1d23',
-  card: '#21242b',
-  border: '#2a2d35',
-  text: '#e0e0e0',
-  textDim: '#8b8d94',
-  green: '#4caf93',
-  red: '#e0556a',
-  yellow: '#f0c040',
-};
+import { COLORS } from '../theme';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 const formatDate = (iso: string) => {
@@ -137,12 +127,12 @@ export default function HistoryScreen() {
           <Text style={styles.reportDate}>{formatDate(item.date)}</Text>
           <View style={styles.workerCol}>
             <Text style={styles.reportWorker}>{item.workerName || '—'}</Text>
-            {isPaid && <Text style={styles.paidBadge}>💰 Выплачено</Text>}
+            {isPaid && <Text style={styles.paidBadge}>Выплачено</Text>}
           </View>
           <Text style={styles.reportFact}>{formatNum(item.factTotal)} ₽</Text>
           <Text style={[styles.reportDiff, { color: diffColor }]}>{diffText}</Text>
           <TouchableOpacity style={styles.copyBtn} onPress={() => copyReport(item)}>
-            <Text style={styles.copyBtnText}>📋</Text>
+            <Text style={styles.copyBtnText}>Копировать</Text>
           </TouchableOpacity>
           <Text style={styles.arrow}>{isExpanded ? '▾' : '▸'}</Text>
         </View>
@@ -150,7 +140,7 @@ export default function HistoryScreen() {
           <View style={styles.details}>
             <View style={styles.detailHeader}>
               <Text style={styles.detailText}>Сотрудник: {item.workerName || '—'}</Text>
-              {isPaid && <Text style={styles.paidBadge}>💰 Зарплата выплачена</Text>}
+              {isPaid && <Text style={styles.paidBadge}>Зарплата выплачена</Text>}
             </View>
             <Text style={styles.detailText}>
               Дэш: {formatNum(item.dashTotal)} ₽ (Нал: {formatNum(item.dashCash)}, Карта: {formatNum(item.dashCashless)})
@@ -208,7 +198,7 @@ export default function HistoryScreen() {
 
             <View style={styles.actionButtons}>
               <TouchableOpacity style={styles.exportBtn} onPress={() => copyReport(item)}>
-                <Text style={styles.exportBtnText}>📋 Копировать</Text>
+                <Text style={styles.exportBtnText}>Копировать</Text>
               </TouchableOpacity>
               {editable && (
                 <TouchableOpacity
@@ -269,10 +259,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
   countText: { color: COLORS.textDim, fontSize: 13 },
-  topExportBtn: { backgroundColor: COLORS.green, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 14 },
-  topExportBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  topExportBtn: { backgroundColor: COLORS.green, borderRadius: 0, paddingVertical: 6, paddingHorizontal: 14 },
+  topExportBtnText: { color: COLORS.bg, fontSize: 13, fontWeight: '800' },
   reportCard: {
-    backgroundColor: COLORS.card, borderRadius: 12, padding: 14,
+    backgroundColor: COLORS.card, borderRadius: 0, padding: 14,
     marginBottom: 8, borderWidth: 1, borderColor: COLORS.border,
   },
   reportHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -282,12 +272,12 @@ const styles = StyleSheet.create({
   paidBadge: {
     color: COLORS.yellow, fontSize: 10, fontWeight: '700',
     backgroundColor: '#2a2a1a', paddingHorizontal: 6, paddingVertical: 2,
-    borderRadius: 4, alignSelf: 'flex-start', marginTop: 2,
+    borderRadius: 0, alignSelf: 'flex-start', marginTop: 2,
   },
   reportFact: { color: COLORS.text, fontSize: 13, fontWeight: '600' },
   reportDiff: { fontSize: 12, fontWeight: '600' },
   copyBtn: { padding: 4 },
-  copyBtnText: { fontSize: 16 },
+  copyBtnText: { color: COLORS.green, fontSize: 11, fontWeight: '700' },
   arrow: { color: COLORS.textDim, fontSize: 16, width: 20, textAlign: 'center' },
   details: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: COLORS.border, gap: 4 },
   detailHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
@@ -297,7 +287,7 @@ const styles = StyleSheet.create({
   actionButtons: { flexDirection: 'row', gap: 8, marginTop: 8 },
   exportBtn: {
     flex: 1, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.green,
-    borderRadius: 10, padding: 10, alignItems: 'center',
+    borderRadius: 0, padding: 10, alignItems: 'center',
   },
   exportBtnText: { color: COLORS.green, fontSize: 14, fontWeight: '600' },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },

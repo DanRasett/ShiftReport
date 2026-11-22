@@ -5,11 +5,7 @@ import { GoodItem, GoodDifference } from '../types';
 import { getGoodsData, GoodData } from '../utils/smartshell';
 import { saveGoodsDraft, getGoodsDraft } from '../utils/storage';
 import { useAuth } from '../utils/AuthContext';
-
-const COLORS = {
-  bg: '#1a1d23', card: '#21242b', border: '#2a2d35', text: '#e0e0e0',
-  textDim: '#8b8d94', green: '#4caf93', red: '#e0556a', inputBg: '#282c34',
-};
+import { COLORS } from '../theme';
 
 export default function GoodsScreen() {
   const { isLoggedIn } = useAuth();
@@ -105,23 +101,23 @@ const styles = StyleSheet.create({
   loadingText: { color: COLORS.textDim, fontSize: 14, marginTop: 12 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   headerTitle: { color: COLORS.text, fontSize: 18, fontWeight: '700' },
-  loadBtn: { backgroundColor: COLORS.green, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
-  loadBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  tableHeader: { flexDirection: 'row', backgroundColor: COLORS.card, borderRadius: 8, padding: 12, marginBottom: 2, borderWidth: 1, borderColor: COLORS.border },
+  loadBtn: { backgroundColor: COLORS.green, borderRadius: 0, paddingVertical: 8, paddingHorizontal: 14 },
+  loadBtnText: { color: COLORS.bg, fontSize: 13, fontWeight: '800' },
+  tableHeader: { flexDirection: 'row', backgroundColor: COLORS.card, borderRadius: 0, padding: 12, marginBottom: 2, borderWidth: 1, borderColor: COLORS.border },
   thText: { color: COLORS.textDim, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
   thName: { flex: 3 }, thShell: { flex: 1, textAlign: 'center' }, thFact: { flex: 1, textAlign: 'center' },
-  tableRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 8, padding: 10, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border },
+  tableRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 0, padding: 10, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border },
   tdText: { color: COLORS.text, fontSize: 14 }, tdName: { flex: 3 }, tdShell: { flex: 1, textAlign: 'center' },
-  tdInput: { flex: 1, backgroundColor: COLORS.inputBg, borderRadius: 6, padding: 8, color: COLORS.text, fontSize: 14, textAlign: 'center', borderWidth: 1, borderColor: COLORS.border },
-  checkBtn: { backgroundColor: COLORS.green, borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 12 },
-  checkBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  diffCard: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginTop: 16, borderWidth: 1, borderColor: COLORS.border },
+  tdInput: { flex: 1, backgroundColor: COLORS.inputBg, borderRadius: 0, padding: 8, color: COLORS.text, fontSize: 14, textAlign: 'center', borderWidth: 1, borderColor: COLORS.border },
+  checkBtn: { backgroundColor: COLORS.green, borderRadius: 0, padding: 14, alignItems: 'center', marginTop: 12 },
+  checkBtnText: { color: COLORS.bg, fontSize: 15, fontWeight: '800' },
+  diffCard: { backgroundColor: COLORS.card, borderRadius: 0, padding: 16, marginTop: 16, borderWidth: 1, borderColor: COLORS.border },
   diffTitle: { color: COLORS.text, fontSize: 16, fontWeight: '700', marginBottom: 8 },
   diffDivider: { height: 1, backgroundColor: COLORS.border, marginBottom: 12 },
   diffRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   diffName: { color: COLORS.text, fontSize: 14, flex: 2 },
   diffValue: { fontSize: 18, fontWeight: '700', flex: 1, textAlign: 'right' },
-  emptyCard: { backgroundColor: COLORS.card, borderRadius: 12, padding: 30, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
+  emptyCard: { backgroundColor: COLORS.card, borderRadius: 0, padding: 30, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
   emptyText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   emptySubText: { color: COLORS.textDim, fontSize: 13, marginTop: 6, textAlign: 'center' },
 });
