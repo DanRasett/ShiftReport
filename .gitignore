@@ -39,12 +39,26 @@ yarn-error.*
 # local AI assistant and agent settings
 .codex/
 .agents/
+.figma/
 .claude/
 .cursor/
 .windsurf/
 .aider*
 AGENTS.local.md
 CLAUDE.local.md
+
+# local editor settings
+.vscode/
+
+# local project notes and working documents
+AGENTS.md
+DESIGN.md
+PRODUCT.md
+docs/
+sessions/
+wiki/
+skills-lock.json
+*.docx
 
 # local reports, caches and temporary files
 coverage/
