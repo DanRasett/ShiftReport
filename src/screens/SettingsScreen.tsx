@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { COLORS } from '../theme';
 import Animated from 'react-native-reanimated';
-import { screenEntrance, useScreenMotion } from '../utils/screenMotion';
+import { screenEntrance, useScreenMotion, useScreenMotionKey } from '../utils/screenMotion';
 import {
   CustomShiftItem, ShiftSettings, defaultSettings, getCustomShiftItems,
   getSettings, saveCustomShiftItems, saveSettings,
@@ -25,6 +25,7 @@ const visibilityItems: { key: keyof ShiftSettings; label: string }[] = [
 
 export default function SettingsScreen() {
   const screenMotionStyle = useScreenMotion();
+  const screenMotionKey = useScreenMotionKey();
   const [settings, setSettings] = useState<ShiftSettings>(defaultSettings);
   const [customItems, setCustomItems] = useState<CustomShiftItem[]>([]);
   const [newItemLabel, setNewItemLabel] = useState('');
@@ -72,7 +73,7 @@ export default function SettingsScreen() {
 
   if (loading) {
     return (
-      <Animated.View entering={screenEntrance(0)} style={[styles.loading, screenMotionStyle]}>
+      <Animated.View key={screenMotionKey} entering={screenEntrance(0)} style={[styles.loading, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
         <Text style={styles.loadingText}>Загружаем настройки</Text>
       </Animated.View>
@@ -80,7 +81,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <Animated.ScrollView style={[styles.container, screenMotionStyle]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <Animated.ScrollView key={screenMotionKey} style={[styles.container, screenMotionStyle]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Animated.View entering={screenEntrance(0)} style={styles.hero}>
         <Text style={styles.eyebrow}>КОНФИГУРАЦИЯ</Text>
         <Text style={styles.title}>Настройки смены</Text>

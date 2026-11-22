@@ -13,7 +13,7 @@ import { getHistory } from '../utils/storage';
 import { SavedReport } from '../types';
 import { COLORS } from '../theme';
 import Animated, { FadeIn, FadeInDown, ReduceMotion } from 'react-native-reanimated';
-import { useScreenMotion } from '../utils/screenMotion';
+import { useScreenMotion, useScreenMotionKey } from '../utils/screenMotion';
 
 const formatNum = (value: number) => value.toLocaleString('ru-RU');
 
@@ -42,6 +42,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const screenMotionStyle = useScreenMotion();
+  const screenMotionKey = useScreenMotionKey();
   const entrance = (delay: number) => FadeInDown.duration(280).delay(delay).reduceMotion(ReduceMotion.System);
 
   useFocusEffect(
@@ -66,7 +67,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
 
   if (loading) {
     return (
-      <Animated.View entering={FadeIn.duration(220).reduceMotion(ReduceMotion.System)} style={[styles.center, screenMotionStyle]}>
+      <Animated.View key={screenMotionKey} entering={FadeIn.duration(220).reduceMotion(ReduceMotion.System)} style={[styles.center, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
         <Text style={styles.loadingText}>ЗАГРУЗКА ДАННЫХ</Text>
       </Animated.View>
@@ -104,6 +105,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
 
   return (
     <Animated.ScrollView
+      key={screenMotionKey}
       style={[styles.container, screenMotionStyle]}
       contentContainerStyle={[styles.content, isDesktop && styles.contentDesktop]}
       showsVerticalScrollIndicator={false}

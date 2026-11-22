@@ -7,10 +7,11 @@ import { saveGoodsDraft, getGoodsDraft } from '../utils/storage';
 import { useAuth } from '../utils/AuthContext';
 import { COLORS } from '../theme';
 import Animated from 'react-native-reanimated';
-import { screenEntrance, useScreenMotion } from '../utils/screenMotion';
+import { screenEntrance, useScreenMotion, useScreenMotionKey } from '../utils/screenMotion';
 
 export default function GoodsScreen() {
   const screenMotionStyle = useScreenMotion();
+  const screenMotionKey = useScreenMotionKey();
   const { isLoggedIn } = useAuth();
   const [goods, setGoods] = useState<GoodItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,7 +53,7 @@ export default function GoodsScreen() {
 
   if (loading) {
     return (
-      <Animated.View entering={screenEntrance(0)} style={[styles.center, screenMotionStyle]}>
+      <Animated.View key={screenMotionKey} entering={screenEntrance(0)} style={[styles.center, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
         <Text style={styles.loadingText}>Загрузка товаров...</Text>
       </Animated.View>
@@ -60,7 +61,7 @@ export default function GoodsScreen() {
   }
 
   return (
-    <Animated.ScrollView style={[styles.container, screenMotionStyle]} keyboardShouldPersistTaps="handled">
+    <Animated.ScrollView key={screenMotionKey} style={[styles.container, screenMotionStyle]} keyboardShouldPersistTaps="handled">
       <Animated.View entering={screenEntrance(0)} style={styles.header}>
         <Text style={styles.headerTitle}>Инвентаризация товаров</Text>
         <TouchableOpacity style={styles.loadBtn} onPress={fetchGoods} disabled={loading}>

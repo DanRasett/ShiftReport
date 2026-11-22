@@ -6,10 +6,11 @@ import {
 import { getWorkersWithSettings, updateWorkerSettings } from '../utils/storage';
 import { COLORS } from '../theme';
 import Animated from 'react-native-reanimated';
-import { screenEntrance, useScreenMotion } from '../utils/screenMotion';
+import { screenEntrance, useScreenMotion, useScreenMotionKey } from '../utils/screenMotion';
 
 export default function WorkersSettingsScreen() {
   const screenMotionStyle = useScreenMotion();
+  const screenMotionKey = useScreenMotionKey();
   const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,14 +50,14 @@ export default function WorkersSettingsScreen() {
 
   if (loading) {
     return (
-      <Animated.View entering={screenEntrance(0)} style={[styles.center, screenMotionStyle]}>
+      <Animated.View key={screenMotionKey} entering={screenEntrance(0)} style={[styles.center, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
       </Animated.View>
     );
   }
 
   return (
-    <Animated.ScrollView style={[styles.container, screenMotionStyle]}>
+    <Animated.ScrollView key={screenMotionKey} style={[styles.container, screenMotionStyle]}>
       <Animated.Text entering={screenEntrance(0)} style={styles.title}>Настройки сотрудников</Animated.Text>
       {workers.map((worker, index) => (
         <Animated.View key={worker.id} entering={screenEntrance(70 + index * 45)} style={styles.card}>

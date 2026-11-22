@@ -19,7 +19,7 @@ import PickerModal from '../components/PickerModal';
 import { CustomShiftItem, getCustomShiftItems, getSettings, ShiftSettings } from '../utils/settings';
 import { COLORS } from '../theme';
 import Animated from 'react-native-reanimated';
-import { screenEntrance, useScreenMotion } from '../utils/screenMotion';
+import { screenEntrance, useScreenMotion, useScreenMotionKey } from '../utils/screenMotion';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 
@@ -52,6 +52,7 @@ export default function ShiftScreen() {
   const { isLoggedIn } = useAuth();
   const isFocused = useIsFocused();
   const screenMotionStyle = useScreenMotion();
+  const screenMotionKey = useScreenMotionKey();
 
   const [form, setForm] = useState<ShiftForm>({ dashCash: '', dashCashless: '', factCash: '', factCashless: '', transfers: '', expenses: [{ id: '1', name: '', description: '' }] });
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -210,7 +211,7 @@ export default function ShiftScreen() {
   const pctLabel = calc.dashTotal > 10000 ? '3%' : '2%';
 
   return (
-    <Animated.ScrollView style={[styles.container, screenMotionStyle]} keyboardShouldPersistTaps="handled">
+    <Animated.ScrollView key={screenMotionKey} style={[styles.container, screenMotionStyle]} keyboardShouldPersistTaps="handled">
       <Animated.View entering={screenEntrance(0)} style={styles.pageHeader}>
         <Text style={styles.eyebrow}>ОТЧЁТ / НОВАЯ СМЕНА</Text>
         <Text style={styles.pageTitle}>Сдача смены</Text>

@@ -11,12 +11,13 @@ import { calculateShift } from '../utils/calculations';
 import PickerModal from '../components/PickerModal';
 import { COLORS } from '../theme';
 import Animated from 'react-native-reanimated';
-import { screenEntrance, useScreenMotion } from '../utils/screenMotion';
+import { screenEntrance, useScreenMotion, useScreenMotionKey } from '../utils/screenMotion';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 
 export default function EditReportScreen() {
   const screenMotionStyle = useScreenMotion();
+  const screenMotionKey = useScreenMotionKey();
   const route = useRoute<any>();
   const navigation = useNavigation();
   const reportId = route.params?.reportId;
@@ -166,7 +167,7 @@ export default function EditReportScreen() {
 
   if (loading) {
     return (
-      <Animated.View entering={screenEntrance(0)} style={[styles.center, screenMotionStyle]}>
+      <Animated.View key={screenMotionKey} entering={screenEntrance(0)} style={[styles.center, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
       </Animated.View>
     );
@@ -174,14 +175,14 @@ export default function EditReportScreen() {
 
   if (!report) {
     return (
-      <Animated.View entering={screenEntrance(0)} style={[styles.center, screenMotionStyle]}>
+      <Animated.View key={screenMotionKey} entering={screenEntrance(0)} style={[styles.center, screenMotionStyle]}>
         <Text style={styles.errorText}>Отчёт не найден</Text>
       </Animated.View>
     );
   }
 
   return (
-    <Animated.ScrollView style={[styles.container, screenMotionStyle]} keyboardShouldPersistTaps="handled">
+    <Animated.ScrollView key={screenMotionKey} style={[styles.container, screenMotionStyle]} keyboardShouldPersistTaps="handled">
       <Animated.View entering={screenEntrance(0)}>
         <Text style={styles.title}>Редактирование отчёта</Text>
         <Text style={styles.subtitle}>

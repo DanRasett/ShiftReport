@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import {
   FadeInDown,
@@ -10,6 +10,17 @@ import {
 
 export const screenEntrance = (delay: number) =>
   FadeInDown.duration(280).delay(delay).reduceMotion(ReduceMotion.System);
+
+export function useScreenMotionKey() {
+  const isFocused = useIsFocused();
+  const [motionKey, setMotionKey] = useState(0);
+
+  useEffect(() => {
+    if (isFocused) setMotionKey(key => key + 1);
+  }, [isFocused]);
+
+  return motionKey;
+}
 
 export function useScreenMotion() {
   const isFocused = useIsFocused();

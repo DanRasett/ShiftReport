@@ -8,7 +8,7 @@ import { exportHistoryToExcel, getReportText } from '../utils/export';
 import { useAuth } from '../utils/AuthContext';
 import { COLORS } from '../theme';
 import Animated from 'react-native-reanimated';
-import { screenEntrance, useScreenMotion } from '../utils/screenMotion';
+import { screenEntrance, useScreenMotion, useScreenMotionKey } from '../utils/screenMotion';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 const formatDate = (iso: string) => {
@@ -22,6 +22,7 @@ const formatDate = (iso: string) => {
 
 export default function HistoryScreen() {
   const screenMotionStyle = useScreenMotion();
+  const screenMotionKey = useScreenMotionKey();
   const [reports, setReports] = useState<SavedReport[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { userRoles } = useAuth();
@@ -230,7 +231,7 @@ export default function HistoryScreen() {
   };
 
   return (
-    <Animated.View style={[styles.container, screenMotionStyle]}>
+    <Animated.View key={screenMotionKey} style={[styles.container, screenMotionStyle]}>
       <Animated.View entering={screenEntrance(0)} style={styles.topBar}>
         <Text style={styles.countText}>Всего: {reports.length} смен</Text>
         <TouchableOpacity style={styles.topExportBtn} onPress={handleExport}>

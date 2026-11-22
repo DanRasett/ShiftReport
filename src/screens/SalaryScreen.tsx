@@ -11,7 +11,7 @@ import { getCredentials } from '../utils/storage';
 import { exportSalaryToExcel } from '../utils/export';
 import { COLORS } from '../theme';
 import Animated from 'react-native-reanimated';
-import { screenEntrance, useScreenMotion } from '../utils/screenMotion';
+import { screenEntrance, useScreenMotion, useScreenMotionKey } from '../utils/screenMotion';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 
@@ -24,6 +24,7 @@ interface WorkerData {
 
 export default function SalaryScreen() {
   const screenMotionStyle = useScreenMotion();
+  const screenMotionKey = useScreenMotionKey();
   const [roles, setRoles] = useState<string[]>([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -219,7 +220,7 @@ export default function SalaryScreen() {
   if (!isManagerOrOwner()) return <Animated.View entering={screenEntrance(0)} style={[styles.container, screenMotionStyle]}><View style={styles.lockedCard}><Text style={styles.lockedIcon}>🔒</Text><Text style={styles.lockedTitle}>Доступ ограничен</Text></View></Animated.View>;
 
   return (
-    <Animated.ScrollView style={[styles.container, screenMotionStyle]}>
+    <Animated.ScrollView key={screenMotionKey} style={[styles.container, screenMotionStyle]}>
       <Animated.Text entering={screenEntrance(0)} style={styles.title}>Расчёт зарплаты</Animated.Text>
       <Animated.View entering={screenEntrance(70)} style={styles.card}>
         <Text style={styles.cardTitle}>Период</Text>
