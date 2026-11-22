@@ -11,7 +11,7 @@ import { calculateShift } from '../utils/calculations';
 import PickerModal from '../components/PickerModal';
 import { COLORS } from '../theme';
 import Animated from 'react-native-reanimated';
-import { useScreenMotion } from '../utils/screenMotion';
+import { screenEntrance, useScreenMotion } from '../utils/screenMotion';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 
@@ -166,7 +166,7 @@ export default function EditReportScreen() {
 
   if (loading) {
     return (
-      <Animated.View style={[styles.center, screenMotionStyle]}>
+      <Animated.View entering={screenEntrance(0)} style={[styles.center, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
       </Animated.View>
     );
@@ -174,7 +174,7 @@ export default function EditReportScreen() {
 
   if (!report) {
     return (
-      <Animated.View style={[styles.center, screenMotionStyle]}>
+      <Animated.View entering={screenEntrance(0)} style={[styles.center, screenMotionStyle]}>
         <Text style={styles.errorText}>Отчёт не найден</Text>
       </Animated.View>
     );
@@ -182,11 +182,14 @@ export default function EditReportScreen() {
 
   return (
     <Animated.ScrollView style={[styles.container, screenMotionStyle]} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Редактирование отчёта</Text>
-      <Text style={styles.subtitle}>
-        {report.workerName} — {new Date(report.date).toLocaleString('ru-RU')}
-      </Text>
+      <Animated.View entering={screenEntrance(0)}>
+        <Text style={styles.title}>Редактирование отчёта</Text>
+        <Text style={styles.subtitle}>
+          {report.workerName} — {new Date(report.date).toLocaleString('ru-RU')}
+        </Text>
+      </Animated.View>
 
+      <Animated.View entering={screenEntrance(70)}>
       {/* Дэш (только чтение) */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Дэш (терминал) — только чтение</Text>
@@ -248,9 +251,12 @@ export default function EditReportScreen() {
         <TouchableOpacity style={styles.addBtn} onPress={addCashTaken}><Text style={styles.addBtnText}>+ Добавить</Text></TouchableOpacity>
       </View>
 
+      </Animated.View>
+      <Animated.View entering={screenEntrance(180)}>
       <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
         <Text style={styles.saveBtnText}>{saving ? 'Сохранение...' : 'Сохранить изменения'}</Text>
       </TouchableOpacity>
+      </Animated.View>
 
       <PickerModal visible={showWorkerPicker} title="Выберите сотрудника" items={workers.map(w => ({ id: w.id, label: w.name }))} onSelect={selectWorker} onClose={() => { setShowWorkerPicker(false); setCurrentPickerTarget(null); }} />
       <PickerModal visible={showGoodsPicker} title="Выберите товар" items={goodsList.map(g => ({ id: g.id, label: g.title, sublabel: `${g.cost} ₽` }))} onSelect={selectGoodsItem} onClose={() => { setShowGoodsPicker(false); setCurrentGoodsIndex(null); }} />

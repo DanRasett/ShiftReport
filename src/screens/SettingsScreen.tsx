@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { COLORS } from '../theme';
 import Animated from 'react-native-reanimated';
-import { useScreenMotion } from '../utils/screenMotion';
+import { screenEntrance, useScreenMotion } from '../utils/screenMotion';
 import {
   CustomShiftItem, ShiftSettings, defaultSettings, getCustomShiftItems,
   getSettings, saveCustomShiftItems, saveSettings,
@@ -72,7 +72,7 @@ export default function SettingsScreen() {
 
   if (loading) {
     return (
-      <Animated.View style={[styles.loading, screenMotionStyle]}>
+      <Animated.View entering={screenEntrance(0)} style={[styles.loading, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
         <Text style={styles.loadingText}>Загружаем настройки</Text>
       </Animated.View>
@@ -81,15 +81,15 @@ export default function SettingsScreen() {
 
   return (
     <Animated.ScrollView style={[styles.container, screenMotionStyle]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <View style={styles.hero}>
+      <Animated.View entering={screenEntrance(0)} style={styles.hero}>
         <Text style={styles.eyebrow}>КОНФИГУРАЦИЯ</Text>
         <Text style={styles.title}>Настройки смены</Text>
         <Text style={styles.subtitle}>Настройте состав формы под рабочий процесс команды.</Text>
-      </View>
+      </Animated.View>
 
       {saving && <Text style={styles.savingText}>Изменения сохраняются</Text>}
 
-      <View style={styles.section}>
+      <Animated.View entering={screenEntrance(70)} style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionIndex}>01</Text>
           <View style={styles.sectionHeading}>
@@ -108,9 +108,9 @@ export default function SettingsScreen() {
             />
           </View>
         ))}
-      </View>
+      </Animated.View>
 
-      <View style={styles.section}>
+      <Animated.View entering={screenEntrance(140)} style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionIndex}>02</Text>
           <View style={styles.sectionHeading}>
@@ -150,24 +150,26 @@ export default function SettingsScreen() {
             </View>
           ))
         )}
-      </View>
+      </Animated.View>
 
-      <TouchableOpacity
-        style={styles.resetButton}
-        onPress={() => Alert.alert('Сбросить настройки?', 'Все стандартные блоки снова будут включены.', [
-          { text: 'Отмена', style: 'cancel' },
-          {
-            text: 'Сбросить',
-            style: 'destructive',
-            onPress: async () => {
-              setSettings(defaultSettings);
-              await saveSettings(defaultSettings);
+      <Animated.View entering={screenEntrance(210)}>
+        <TouchableOpacity
+          style={styles.resetButton}
+          onPress={() => Alert.alert('Сбросить настройки?', 'Все стандартные блоки снова будут включены.', [
+            { text: 'Отмена', style: 'cancel' },
+            {
+              text: 'Сбросить',
+              style: 'destructive',
+              onPress: async () => {
+                setSettings(defaultSettings);
+                await saveSettings(defaultSettings);
+              },
             },
-          },
-        ])}
-      >
-        <Text style={styles.resetButtonText}>Сбросить стандартные настройки</Text>
-      </TouchableOpacity>
+          ])}
+        >
+          <Text style={styles.resetButtonText}>Сбросить стандартные настройки</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </Animated.ScrollView>
   );
 }

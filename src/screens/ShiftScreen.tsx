@@ -19,7 +19,7 @@ import PickerModal from '../components/PickerModal';
 import { CustomShiftItem, getCustomShiftItems, getSettings, ShiftSettings } from '../utils/settings';
 import { COLORS } from '../theme';
 import Animated from 'react-native-reanimated';
-import { useScreenMotion } from '../utils/screenMotion';
+import { screenEntrance, useScreenMotion } from '../utils/screenMotion';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 
@@ -211,11 +211,12 @@ export default function ShiftScreen() {
 
   return (
     <Animated.ScrollView style={[styles.container, screenMotionStyle]} keyboardShouldPersistTaps="handled">
-      <View style={styles.pageHeader}>
+      <Animated.View entering={screenEntrance(0)} style={styles.pageHeader}>
         <Text style={styles.eyebrow}>ОТЧЁТ / НОВАЯ СМЕНА</Text>
         <Text style={styles.pageTitle}>Сдача смены</Text>
         <Text style={styles.pageSubtitle}>Заполните показатели и проверьте итог перед отправкой.</Text>
-      </View>
+      </Animated.View>
+      <Animated.View entering={screenEntrance(70)}>
       {settings?.showWorker !== false && (
         <View style={styles.card}><Text style={styles.cardTitle}>Сотрудник</Text><TouchableOpacity style={styles.pickerBtn} onPress={() => { setCurrentPickerTarget('worker'); setShowWorkerPicker(true); }}><Text style={[styles.pickerBtnText, !workerName && { color: COLORS.textDim }]}>{workerName || 'Выберите'}</Text><Text style={styles.pickerArrow}>▼</Text></TouchableOpacity></View>
       )}
@@ -302,6 +303,7 @@ export default function ShiftScreen() {
           <TouchableOpacity style={[styles.shareBtn, sending && { opacity: 0.6 }]} onPress={handleShare} disabled={sending}><Text style={styles.shareBtnText}>{sending ? 'Отправка...' : 'Отправить отчёт'}</Text></TouchableOpacity>
         </>
       )}
+      </Animated.View>
       <PickerModal visible={showWorkerPicker} title="Выберите сотрудника" items={workers.map(w => ({ id: w.id, label: w.name }))} onSelect={selectWorker} onClose={() => { setShowWorkerPicker(false); setCurrentPickerTarget(null); }} />
       <PickerModal visible={showGoodsPicker} title="Выберите товар" items={goodsList.map(g => ({ id: g.id, label: g.title, sublabel: `${g.cost} ₽` }))} onSelect={selectGoodsItem} onClose={() => { setShowGoodsPicker(false); setCurrentGoodsIndex(null); }} />
       <View style={{ height: 40 }} />

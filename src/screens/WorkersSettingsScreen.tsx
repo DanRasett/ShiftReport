@@ -6,7 +6,7 @@ import {
 import { getWorkersWithSettings, updateWorkerSettings } from '../utils/storage';
 import { COLORS } from '../theme';
 import Animated from 'react-native-reanimated';
-import { useScreenMotion } from '../utils/screenMotion';
+import { screenEntrance, useScreenMotion } from '../utils/screenMotion';
 
 export default function WorkersSettingsScreen() {
   const screenMotionStyle = useScreenMotion();
@@ -49,7 +49,7 @@ export default function WorkersSettingsScreen() {
 
   if (loading) {
     return (
-      <Animated.View style={[styles.center, screenMotionStyle]}>
+      <Animated.View entering={screenEntrance(0)} style={[styles.center, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
       </Animated.View>
     );
@@ -57,9 +57,9 @@ export default function WorkersSettingsScreen() {
 
   return (
     <Animated.ScrollView style={[styles.container, screenMotionStyle]}>
-      <Text style={styles.title}>Настройки сотрудников</Text>
-      {workers.map((worker) => (
-        <View key={worker.id} style={styles.card}>
+      <Animated.Text entering={screenEntrance(0)} style={styles.title}>Настройки сотрудников</Animated.Text>
+      {workers.map((worker, index) => (
+        <Animated.View key={worker.id} entering={screenEntrance(70 + index * 45)} style={styles.card}>
           <Text style={styles.workerName}>
             {[worker.first_name, worker.last_name].filter(Boolean).join(' ') || worker.nickname || `ID: ${worker.id}`}
           </Text>
@@ -98,7 +98,7 @@ export default function WorkersSettingsScreen() {
           <TouchableOpacity style={styles.saveBtn} onPress={() => saveWorker(worker)}>
             <Text style={styles.saveBtnText}>Сохранить</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       ))}
     </Animated.ScrollView>
   );

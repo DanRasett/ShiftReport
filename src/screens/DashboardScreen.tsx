@@ -66,7 +66,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
 
   if (loading) {
     return (
-      <Animated.View style={[styles.center, screenMotionStyle]}>
+      <Animated.View entering={FadeIn.duration(220).reduceMotion(ReduceMotion.System)} style={[styles.center, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
         <Text style={styles.loadingText}>ЗАГРУЗКА ДАННЫХ</Text>
       </Animated.View>

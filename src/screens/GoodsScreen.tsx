@@ -7,7 +7,7 @@ import { saveGoodsDraft, getGoodsDraft } from '../utils/storage';
 import { useAuth } from '../utils/AuthContext';
 import { COLORS } from '../theme';
 import Animated from 'react-native-reanimated';
-import { useScreenMotion } from '../utils/screenMotion';
+import { screenEntrance, useScreenMotion } from '../utils/screenMotion';
 
 export default function GoodsScreen() {
   const screenMotionStyle = useScreenMotion();
@@ -52,7 +52,7 @@ export default function GoodsScreen() {
 
   if (loading) {
     return (
-      <Animated.View style={[styles.center, screenMotionStyle]}>
+      <Animated.View entering={screenEntrance(0)} style={[styles.center, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
         <Text style={styles.loadingText}>Загрузка товаров...</Text>
       </Animated.View>
@@ -61,14 +61,14 @@ export default function GoodsScreen() {
 
   return (
     <Animated.ScrollView style={[styles.container, screenMotionStyle]} keyboardShouldPersistTaps="handled">
-      <View style={styles.header}>
+      <Animated.View entering={screenEntrance(0)} style={styles.header}>
         <Text style={styles.headerTitle}>Инвентаризация товаров</Text>
         <TouchableOpacity style={styles.loadBtn} onPress={fetchGoods} disabled={loading}>
           <Text style={styles.loadBtnText}>{loaded ? 'Обновить' : 'Загрузить'}</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
       {loaded && goods.length > 0 && (
-        <>
+        <Animated.View entering={screenEntrance(70)}>
           <View style={styles.tableHeader}><Text style={[styles.thText, styles.thName]}>Товар</Text><Text style={[styles.thText, styles.thShell]}>Shell</Text><Text style={[styles.thText, styles.thFact]}>Факт</Text></View>
           {goods.map(item => (
             <View key={item.id} style={styles.tableRow}>
@@ -78,18 +78,18 @@ export default function GoodsScreen() {
             </View>
           ))}
           <TouchableOpacity style={styles.checkBtn} onPress={calcDiff}><Text style={styles.checkBtnText}>Проверить расхождения</Text></TouchableOpacity>
-        </>
+        </Animated.View>
       )}
       {differences.length > 0 && (
-        <View style={styles.diffCard}>
+        <Animated.View entering={screenEntrance(120)} style={styles.diffCard}>
           <Text style={styles.diffTitle}>Различие по товарам</Text><View style={styles.diffDivider} />
           {differences.map((d, i) => (
             <View key={i} style={styles.diffRow}><Text style={styles.diffName}>{d.name}</Text><Text style={[styles.diffValue, { color: d.difference > 0 ? COLORS.green : COLORS.red }]}>{d.difference > 0 ? '+' : ''}{d.difference}</Text></View>
           ))}
-        </View>
+        </Animated.View>
       )}
       {loaded && goods.length === 0 && !loading && (
-        <View style={styles.emptyCard}><Text style={styles.emptyText}>Нет данных о товарах</Text><Text style={styles.emptySubText}>Возможно, смена не начата или нет продаж</Text></View>
+        <Animated.View entering={screenEntrance(100)} style={styles.emptyCard}><Text style={styles.emptyText}>Нет данных о товарах</Text><Text style={styles.emptySubText}>Возможно, смена не начата или нет продаж</Text></Animated.View>
       )}
       <View style={{ height: 40 }} />
     </Animated.ScrollView>

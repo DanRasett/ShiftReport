@@ -8,7 +8,7 @@ import { exportHistoryToExcel, getReportText } from '../utils/export';
 import { useAuth } from '../utils/AuthContext';
 import { COLORS } from '../theme';
 import Animated from 'react-native-reanimated';
-import { useScreenMotion } from '../utils/screenMotion';
+import { screenEntrance, useScreenMotion } from '../utils/screenMotion';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 const formatDate = (iso: string) => {
@@ -231,24 +231,26 @@ export default function HistoryScreen() {
 
   return (
     <Animated.View style={[styles.container, screenMotionStyle]}>
-      <View style={styles.topBar}>
+      <Animated.View entering={screenEntrance(0)} style={styles.topBar}>
         <Text style={styles.countText}>Всего: {reports.length} смен</Text>
         <TouchableOpacity style={styles.topExportBtn} onPress={handleExport}>
           <Text style={styles.topExportBtnText}>📥 Excel</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {reports.length === 0 ? (
-        <View style={styles.empty}>
+        <Animated.View entering={screenEntrance(70)} style={styles.empty}>
           <Text style={styles.emptyText}>Нет сохранённых отчётов</Text>
-        </View>
+        </Animated.View>
       ) : (
-        <FlatList
-          data={reports}
-          keyExtractor={(item) => item.id}
-          renderItem={renderReport}
-          contentContainerStyle={{ padding: 16 }}
-        />
+        <Animated.View entering={screenEntrance(70)} style={{ flex: 1 }}>
+          <FlatList
+            data={reports}
+            keyExtractor={(item) => item.id}
+            renderItem={renderReport}
+            contentContainerStyle={{ padding: 16 }}
+          />
+        </Animated.View>
       )}
     </Animated.View>
   );

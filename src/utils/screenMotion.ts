@@ -1,11 +1,15 @@
 import { useEffect } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import {
+  FadeInDown,
   ReduceMotion,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+
+export const screenEntrance = (delay: number) =>
+  FadeInDown.duration(280).delay(delay).reduceMotion(ReduceMotion.System);
 
 export function useScreenMotion() {
   const isFocused = useIsFocused();

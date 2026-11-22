@@ -11,7 +11,7 @@ import { getCredentials } from '../utils/storage';
 import { exportSalaryToExcel } from '../utils/export';
 import { COLORS } from '../theme';
 import Animated from 'react-native-reanimated';
-import { useScreenMotion } from '../utils/screenMotion';
+import { screenEntrance, useScreenMotion } from '../utils/screenMotion';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 
@@ -215,25 +215,25 @@ export default function SalaryScreen() {
     Alert.alert('Готово', `Выплачено: ${ok}, Ошибок: ${err}`);
   };
 
-  if (loading) return <Animated.View style={[styles.center, screenMotionStyle]}><ActivityIndicator size="large" color={COLORS.green} /><Text style={styles.loadingText}>Проверка доступа...</Text></Animated.View>;
-  if (!isManagerOrOwner()) return <Animated.View style={[styles.container, screenMotionStyle]}><View style={styles.lockedCard}><Text style={styles.lockedIcon}>🔒</Text><Text style={styles.lockedTitle}>Доступ ограничен</Text></View></Animated.View>;
+  if (loading) return <Animated.View entering={screenEntrance(0)} style={[styles.center, screenMotionStyle]}><ActivityIndicator size="large" color={COLORS.green} /><Text style={styles.loadingText}>Проверка доступа...</Text></Animated.View>;
+  if (!isManagerOrOwner()) return <Animated.View entering={screenEntrance(0)} style={[styles.container, screenMotionStyle]}><View style={styles.lockedCard}><Text style={styles.lockedIcon}>🔒</Text><Text style={styles.lockedTitle}>Доступ ограничен</Text></View></Animated.View>;
 
   return (
     <Animated.ScrollView style={[styles.container, screenMotionStyle]}>
-      <Text style={styles.title}>Расчёт зарплаты</Text>
-      <View style={styles.card}>
+      <Animated.Text entering={screenEntrance(0)} style={styles.title}>Расчёт зарплаты</Animated.Text>
+      <Animated.View entering={screenEntrance(70)} style={styles.card}>
         <Text style={styles.cardTitle}>Период</Text>
         <View style={styles.dateRow}>
           <View style={styles.dateField}><Text style={styles.label}>С (ДД.ММ.ГГГГ)</Text><TextInput style={styles.input} placeholder="01.05.2025" placeholderTextColor={COLORS.textDim} value={fromDate} onChangeText={setFromDate} keyboardType="numeric" /></View>
           <View style={styles.dateField}><Text style={styles.label}>По (ДД.ММ.ГГГГ)</Text><TextInput style={styles.input} placeholder="10.05.2025" placeholderTextColor={COLORS.textDim} value={toDate} onChangeText={setToDate} keyboardType="numeric" /></View>
         </View>
         <TouchableOpacity style={[styles.calcBtn, calculating && { opacity: 0.6 }]} onPress={calculate} disabled={calculating}><Text style={styles.calcBtnText}>{calculating ? 'Расчёт...' : 'Рассчитать'}</Text></TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {Object.keys(salaryData).length > 0 && (
         <>
-          {Object.entries(salaryData).map(([worker, data]) => (
-            <View key={worker} style={styles.workerCard}>
+          {Object.entries(salaryData).map(([worker, data], index) => (
+            <Animated.View key={worker} entering={screenEntrance(140 + index * 45)} style={styles.workerCard}>
               <Text style={styles.workerName}>{worker}</Text>
               <Text style={styles.shiftCount}>Смен: {data.shifts.length}</Text>
 
@@ -333,7 +333,7 @@ export default function SalaryScreen() {
                   {formatNum(data.total)} ₽
                 </Text>
               </View>
-            </View>
+            </Animated.View>
           ))}
 
           {/* Сводка по товарам */}
