@@ -10,6 +10,8 @@ import { getUserRole, loginToSmartShell } from '../utils/smartshell';
 import { getCredentials } from '../utils/storage';
 import { exportSalaryToExcel } from '../utils/export';
 import { COLORS } from '../theme';
+import Animated from 'react-native-reanimated';
+import { useScreenMotion } from '../utils/screenMotion';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 
@@ -21,6 +23,7 @@ interface WorkerData {
 }
 
 export default function SalaryScreen() {
+  const screenMotionStyle = useScreenMotion();
   const [roles, setRoles] = useState<string[]>([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -212,11 +215,11 @@ export default function SalaryScreen() {
     Alert.alert('Готово', `Выплачено: ${ok}, Ошибок: ${err}`);
   };
 
-  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={COLORS.green} /><Text style={styles.loadingText}>Проверка доступа...</Text></View>;
-  if (!isManagerOrOwner()) return <View style={styles.container}><View style={styles.lockedCard}><Text style={styles.lockedIcon}>🔒</Text><Text style={styles.lockedTitle}>Доступ ограничен</Text></View></View>;
+  if (loading) return <Animated.View style={[styles.center, screenMotionStyle]}><ActivityIndicator size="large" color={COLORS.green} /><Text style={styles.loadingText}>Проверка доступа...</Text></Animated.View>;
+  if (!isManagerOrOwner()) return <Animated.View style={[styles.container, screenMotionStyle]}><View style={styles.lockedCard}><Text style={styles.lockedIcon}>🔒</Text><Text style={styles.lockedTitle}>Доступ ограничен</Text></View></Animated.View>;
 
   return (
-    <ScrollView style={styles.container}>
+    <Animated.ScrollView style={[styles.container, screenMotionStyle]}>
       <Text style={styles.title}>Расчёт зарплаты</Text>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Период</Text>
@@ -399,7 +402,7 @@ export default function SalaryScreen() {
           </View>
         </>
       )}
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 

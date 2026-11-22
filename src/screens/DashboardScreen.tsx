@@ -13,6 +13,7 @@ import { getHistory } from '../utils/storage';
 import { SavedReport } from '../types';
 import { COLORS } from '../theme';
 import Animated, { FadeIn, FadeInDown, ReduceMotion } from 'react-native-reanimated';
+import { useScreenMotion } from '../utils/screenMotion';
 
 const formatNum = (value: number) => value.toLocaleString('ru-RU');
 
@@ -40,6 +41,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
   const [loading, setLoading] = useState(true);
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
+  const screenMotionStyle = useScreenMotion();
   const entrance = (delay: number) => FadeInDown.duration(280).delay(delay).reduceMotion(ReduceMotion.System);
 
   useFocusEffect(
@@ -64,10 +66,10 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <Animated.View style={[styles.center, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
         <Text style={styles.loadingText}>ЗАГРУЗКА ДАННЫХ</Text>
-      </View>
+      </Animated.View>
     );
   }
 
@@ -101,8 +103,8 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
   const workers = Object.entries(workerShifts).sort(([, first], [, second]) => second - first);
 
   return (
-    <ScrollView
-      style={styles.container}
+    <Animated.ScrollView
+      style={[styles.container, screenMotionStyle]}
       contentContainerStyle={[styles.content, isDesktop && styles.contentDesktop]}
       showsVerticalScrollIndicator={false}
     >
@@ -229,7 +231,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
           <Text style={styles.emptyText}>Смены еще не закрыты</Text>
         )}
       </Animated.View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 

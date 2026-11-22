@@ -10,10 +10,13 @@ import { SavedReport } from '../types';
 import { calculateShift } from '../utils/calculations';
 import PickerModal from '../components/PickerModal';
 import { COLORS } from '../theme';
+import Animated from 'react-native-reanimated';
+import { useScreenMotion } from '../utils/screenMotion';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 
 export default function EditReportScreen() {
+  const screenMotionStyle = useScreenMotion();
   const route = useRoute<any>();
   const navigation = useNavigation();
   const reportId = route.params?.reportId;
@@ -163,22 +166,22 @@ export default function EditReportScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <Animated.View style={[styles.center, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
-      </View>
+      </Animated.View>
     );
   }
 
   if (!report) {
     return (
-      <View style={styles.center}>
+      <Animated.View style={[styles.center, screenMotionStyle]}>
         <Text style={styles.errorText}>Отчёт не найден</Text>
-      </View>
+      </Animated.View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+    <Animated.ScrollView style={[styles.container, screenMotionStyle]} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>Редактирование отчёта</Text>
       <Text style={styles.subtitle}>
         {report.workerName} — {new Date(report.date).toLocaleString('ru-RU')}
@@ -252,7 +255,7 @@ export default function EditReportScreen() {
       <PickerModal visible={showWorkerPicker} title="Выберите сотрудника" items={workers.map(w => ({ id: w.id, label: w.name }))} onSelect={selectWorker} onClose={() => { setShowWorkerPicker(false); setCurrentPickerTarget(null); }} />
       <PickerModal visible={showGoodsPicker} title="Выберите товар" items={goodsList.map(g => ({ id: g.id, label: g.title, sublabel: `${g.cost} ₽` }))} onSelect={selectGoodsItem} onClose={() => { setShowGoodsPicker(false); setCurrentGoodsIndex(null); }} />
       <View style={{ height: 40 }} />
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 

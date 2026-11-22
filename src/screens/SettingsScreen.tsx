@@ -4,6 +4,8 @@ import {
   TextInput, TouchableOpacity, View,
 } from 'react-native';
 import { COLORS } from '../theme';
+import Animated from 'react-native-reanimated';
+import { useScreenMotion } from '../utils/screenMotion';
 import {
   CustomShiftItem, ShiftSettings, defaultSettings, getCustomShiftItems,
   getSettings, saveCustomShiftItems, saveSettings,
@@ -22,6 +24,7 @@ const visibilityItems: { key: keyof ShiftSettings; label: string }[] = [
 ];
 
 export default function SettingsScreen() {
+  const screenMotionStyle = useScreenMotion();
   const [settings, setSettings] = useState<ShiftSettings>(defaultSettings);
   const [customItems, setCustomItems] = useState<CustomShiftItem[]>([]);
   const [newItemLabel, setNewItemLabel] = useState('');
@@ -69,15 +72,15 @@ export default function SettingsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loading}>
+      <Animated.View style={[styles.loading, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
         <Text style={styles.loadingText}>Загружаем настройки</Text>
-      </View>
+      </Animated.View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <Animated.ScrollView style={[styles.container, screenMotionStyle]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.hero}>
         <Text style={styles.eyebrow}>КОНФИГУРАЦИЯ</Text>
         <Text style={styles.title}>Настройки смены</Text>
@@ -165,7 +168,7 @@ export default function SettingsScreen() {
       >
         <Text style={styles.resetButtonText}>Сбросить стандартные настройки</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 

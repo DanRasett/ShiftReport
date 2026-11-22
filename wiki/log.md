@@ -6,6 +6,8 @@
 
 ### 2026-11-22
 
+Добавлен общий focus-aware motion для всех вкладок: короткий opacity/translateY переход с поддержкой ReduceMotion.System.
+
 Начали redesign Dashboard: перенесли визуальную систему CyberInfo, подключили BravoRG и собрали мобильную сводку без изменения API и расчетов.
 
 ### 2026-11-22

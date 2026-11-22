@@ -6,8 +6,11 @@ import { getGoodsData, GoodData } from '../utils/smartshell';
 import { saveGoodsDraft, getGoodsDraft } from '../utils/storage';
 import { useAuth } from '../utils/AuthContext';
 import { COLORS } from '../theme';
+import Animated from 'react-native-reanimated';
+import { useScreenMotion } from '../utils/screenMotion';
 
 export default function GoodsScreen() {
+  const screenMotionStyle = useScreenMotion();
   const { isLoggedIn } = useAuth();
   const [goods, setGoods] = useState<GoodItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,15 +52,15 @@ export default function GoodsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <Animated.View style={[styles.center, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
         <Text style={styles.loadingText}>Загрузка товаров...</Text>
-      </View>
+      </Animated.View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+    <Animated.ScrollView style={[styles.container, screenMotionStyle]} keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Инвентаризация товаров</Text>
         <TouchableOpacity style={styles.loadBtn} onPress={fetchGoods} disabled={loading}>
@@ -89,7 +92,7 @@ export default function GoodsScreen() {
         <View style={styles.emptyCard}><Text style={styles.emptyText}>Нет данных о товарах</Text><Text style={styles.emptySubText}>Возможно, смена не начата или нет продаж</Text></View>
       )}
       <View style={{ height: 40 }} />
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 

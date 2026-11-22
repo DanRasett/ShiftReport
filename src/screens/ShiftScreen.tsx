@@ -18,6 +18,8 @@ import { useIsFocused } from '@react-navigation/native';
 import PickerModal from '../components/PickerModal';
 import { CustomShiftItem, getCustomShiftItems, getSettings, ShiftSettings } from '../utils/settings';
 import { COLORS } from '../theme';
+import Animated from 'react-native-reanimated';
+import { useScreenMotion } from '../utils/screenMotion';
 
 const formatNum = (n: number) => n.toLocaleString('ru-RU');
 
@@ -49,6 +51,7 @@ const buildReportText = (
 export default function ShiftScreen() {
   const { isLoggedIn } = useAuth();
   const isFocused = useIsFocused();
+  const screenMotionStyle = useScreenMotion();
 
   const [form, setForm] = useState<ShiftForm>({ dashCash: '', dashCashless: '', factCash: '', factCashless: '', transfers: '', expenses: [{ id: '1', name: '', description: '' }] });
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -207,7 +210,7 @@ export default function ShiftScreen() {
   const pctLabel = calc.dashTotal > 10000 ? '3%' : '2%';
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+    <Animated.ScrollView style={[styles.container, screenMotionStyle]} keyboardShouldPersistTaps="handled">
       <View style={styles.pageHeader}>
         <Text style={styles.eyebrow}>ОТЧЁТ / НОВАЯ СМЕНА</Text>
         <Text style={styles.pageTitle}>Сдача смены</Text>
@@ -302,7 +305,7 @@ export default function ShiftScreen() {
       <PickerModal visible={showWorkerPicker} title="Выберите сотрудника" items={workers.map(w => ({ id: w.id, label: w.name }))} onSelect={selectWorker} onClose={() => { setShowWorkerPicker(false); setCurrentPickerTarget(null); }} />
       <PickerModal visible={showGoodsPicker} title="Выберите товар" items={goodsList.map(g => ({ id: g.id, label: g.title, sublabel: `${g.cost} ₽` }))} onSelect={selectGoodsItem} onClose={() => { setShowGoodsPicker(false); setCurrentGoodsIndex(null); }} />
       <View style={{ height: 40 }} />
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 

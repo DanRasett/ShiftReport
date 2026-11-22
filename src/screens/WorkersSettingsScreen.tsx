@@ -5,8 +5,11 @@ import {
 } from 'react-native';
 import { getWorkersWithSettings, updateWorkerSettings } from '../utils/storage';
 import { COLORS } from '../theme';
+import Animated from 'react-native-reanimated';
+import { useScreenMotion } from '../utils/screenMotion';
 
 export default function WorkersSettingsScreen() {
+  const screenMotionStyle = useScreenMotion();
   const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,14 +49,14 @@ export default function WorkersSettingsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <Animated.View style={[styles.center, screenMotionStyle]}>
         <ActivityIndicator size="large" color={COLORS.green} />
-      </View>
+      </Animated.View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <Animated.ScrollView style={[styles.container, screenMotionStyle]}>
       <Text style={styles.title}>Настройки сотрудников</Text>
       {workers.map((worker) => (
         <View key={worker.id} style={styles.card}>
@@ -97,7 +100,7 @@ export default function WorkersSettingsScreen() {
           </TouchableOpacity>
         </View>
       ))}
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 
