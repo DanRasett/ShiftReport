@@ -22,6 +22,10 @@
 
 ### 2026-11-22
 
+Папка ShiftReport подключена к существующему GitHub-репозиторию DanRasett/ShiftReport; изменения отправлены в ветку test/shiftreport.
+
+### 2026-11-22
+
 Создали первый handoff в sessions/.
 
 ### 2026-11-22
